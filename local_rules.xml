@@ -1,0 +1,346 @@
+<group name="windows, windows_security, active_directory,">
+
+<!-- Testado em ambiente Active Directory com nível funcional Windows Server 2025 + Wazuh v4.14.1 -->
+<!-- Regras de sintaxe deste arquivo: https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/rules.html -->
+
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Detecta possível Kerberoasting usando os logs de Security do DC -->
+  <rule id="110002" level="12">
+    <if_sid>60103</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4769$</field>
+    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <description>Active Directory: Possível ataque de Kerberoasting (RC4 Ticket Request) do usuário $(win.eventdata.targetUserName) na conta $(win.eventdata.serviceName)</description>
+    <mitre>
+      <id>T1558.003</id>
+    </mitre>
+  </rule>
+  
+<!-- Detecta alterações no atributo ServicePrincipalName (SPN) de objetos do AD usando os logs de Security do DC -->
+  <rule id="110003" level="12">
+    <if_sid>60103</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^5136$</field>
+    <field name="win.eventdata.attributeLDAPDisplayName">^servicePrincipalName$</field>
+    <field name="win.eventdata.subjectUserName" negate="yes">^SYSTEM$</field>
+    <description>Active Directory: Alteração de SPN ($(win.eventdata.attributeValue)) do objeto $(win.eventdata.objectDN) realizado por $(win.eventdata.subjectUserName) </description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+  </rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Detecta possível AS-REP Roasting (Kerberos Pre-Auth Disabled) usando os logs de Security do DC -->
+  <rule id="110004" level="12">
+    <if_sid>60103</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4768$</field>
+    <field name="win.eventdata.preAuthType">^0$|^0x0$</field>
+    <field name="win.eventdata.status">^0x0$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">\$$</field>
+    <description>Active Directory: Possível AS-REP Roasting (Kerberos Pre-Auth Disabled) contra usuário $(win.eventdata.targetUserName). Origem: $(win.eventdata.ipAddress)</description>
+    <mitre>
+      <id>T1558.004</id>
+    </mitre>
+  </rule>
+
+<!-- Detecta quando em um objeto é setado o "Do not Require Kerberos Pre-Authentication usando os logs de Security do DC -->
+  <rule id="110005" level="12">
+    <if_sid>60103</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4738$</field>
+    <field name="win.system.message" type="pcre2">(?i)'Don't Require Preauth'\s+-\s+Enabled</field>
+    <description>Active Directory: Pré-autenticação Kerberos desabilitada na conta $(win.eventdata.targetUserName) por $(win.eventdata.subjectUserName)</description>
+    <mitre>
+      <id>T1558.004</id>
+    </mitre>
+  </rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Detecta os eventos básicos de falha de autenticação do NTLM (EventID 4625) e Kerberos (EventID 4771) -->
+<rule id="110006" level="5">
+    <if_sid>60104,60122</if_sid>
+    <field name="win.system.eventID">^4625$|^4771$</field>
+    <options>no_full_log</options>
+    <description>Auditoria: Coletor de Falhas de Autenticação (NTLM 4625 / Kerberos 4771)</description>
+</rule>
+
+<!-- Detecta password spray (diversas tentativas de login com falha vindo de um mesmo IP de origem) usando os logs de Security do DC. O threshold configurado é: 15 tentativas dentro de 2 minutos (120s) -->
+<!-- Baseia-se na regra anterior (110006) para detectar tanto password spray NTLM quanto Kerberos -->
+<rule id="110007" level="12" frequency="15" timeframe="120" ignore="60">
+    <if_matched_sid>110006</if_matched_sid>
+    <options>no_full_log</options>
+    <same_field>win.eventdata.ipAddress</same_field>
+    <field name="win.eventdata.ipAddress" type="pcre2" negate="yes">^127\.0\.0\.1$|^::1$</field>
+    <description>Active Directory: Possível Password Spray (NTLM/Kerberos). O IP $(win.eventdata.ipAddress) gerou pelo menos 15 falhas de autenticação em menos de 2 minutos.</description>
+    <mitre>
+      <id>T1110.001</id>
+      <id>T1110.003</id>
+      <id>T1110.004</id>
+    </mitre>
+</rule>
+
+<!-- Detecta um password spray que tenha tido sucesso, isto é, uma autenticação válida -->
+<!-- Alerta caso haja um IP que disparou a regra anterior (110007) nos últimos 5 minutos (300s) e tenha conseguido autenticar com sucesso -->
+<!-- SID 60106 refere-se a logons com sucesso no Windows -->
+<rule id="110008" level="14" timeframe="600" ignore="10">
+    <if_sid>60106,60118,60200,92652</if_sid>
+    <if_matched_sid>110007</if_matched_sid>
+    <same_field>win.eventdata.ipAddress</same_field>
+    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">^ANONYMOUS LOGON$|.*\$</field>
+    <description>Active Directory: CRÍTICO - Autenticação com SUCESSO do usuário $(win.eventdata.targetUserName) detectada após Password Spray vindo de $(win.eventdata.ipAddress). O usuário foi bloqueado.</description>
+    <mitre>
+        <id>T1110.003</id>
+        <id>T1078.002</id>
+    </mitre>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Detecta alterações em grupos Tier 0  -->
+<!-- Referência de ativos Tier 0: https://specterops.github.io/TierZeroTable -->
+<rule id="110009" level="12">
+    <if_sid>60113</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID" type="pcre2" negate="yes">^4737$|^4735$|^4755$</field>
+    <list field="win.eventdata.targetUserName" lookup="match_key">etc/lists/tier0_groups</list>
+    <description>Active Directory: Alteração de membro no grupo privilegiado $(win.eventdata.targetUserName) realizada pelo usuário $(win.eventdata.subjectUserName). O usuário adicionado/removido foi o $(win.eventdata.memberName)</description>
+    <info type="text">Verificar o campo data.win.system.message para saber se é inclusão ou exclusão</info>
+    <mitre>
+        <id>T1098</id>
+        <id>T1078</id>
+    </mitre>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Monitoramento de contas especiais (break the glass): ações feitas na conta  -->
+<rule id="110010" level="15">
+    <if_group>windows</if_group>
+    <options>no_full_log</options>
+    <field name="win.system.eventID" type="pcre2" negate="yes">^4688$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?ix)^(
+        breaktheglass_da|
+        btg_da
+    )(?:$|@)
+    </field>
+    <description>Active Directory: CRÍTICO - Atividade detectada na conta especial $(win.eventdata.targetUserName). Verifique imediatamente os detalhes da operação realizada. Em caso de não haver justificativa para a ação, desativá-la imediatamente.</description>
+    <mitre>
+        <id>T1078</id>
+        <id>T1098</id>
+    </mitre>
+</rule>
+
+<!-- Monitoramento de contas especiais (break the glass): ações feitas pela conta  -->
+<!-- 
+<rule id="110011" level="15">
+    <if_group>windows</if_group>
+    <field name="win.eventdata.subjectUserName" type="pcre2">(?ix)^(
+        breaktheglass_da|
+        btg_da
+    )(?:$|@)
+    </field>
+    <field name="win.system.eventID" type="pcre2" negate="yes">^4624$|^4625$</field> 
+    <description>Active Directory: CRÍTICO - A conta especial $(win.eventdata.subjectUserName) está executando ações ativas no ambiente. Verifique imediatamente se há justificativa para o seu uso. Em caso negativo, desativá-la imediatamente.</description>
+    <mitre>
+        <id>T1078</id>
+    </mitre>
+</rule> -->
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Monitoramento de configuração de Unconstrained Delegation -->
+<rule id="110011" level="14">
+    <if_sid>60110,60121</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4738$|^4742$</field>
+    <field name="win.system.message" type="pcre2">(?i)'Trusted For Delegation'\s*-\s*Enabled</field>
+    <description>Active Directory: Objeto $(win.eventdata.targetUserName) foi configurado para UNCONSTRAINED DELEGATION pelo usuário $(win.eventdata.subjectUserName). Risco alto de comprometimento do domínio caso o $(win.eventdata.targetUserName) seja comprometido.</description>
+    <mitre>
+        <id>T1098</id>
+        <id>T1558</id>
+    </mitre>
+</rule>
+
+<!-- Monitoramento de configuração de Constrained Delegation -->
+<rule id="110012" level="12">
+    <if_sid>60110,60121</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4738$|^4742$</field>
+    <field name="win.system.message" type="pcre2">(?ix)(?:
+        'Trusted\sTo\sAuthenticate\sFor\sDelegation'\s*-\s*Enabled
+    )</field>
+    <description>Active Directory: Objeto $(win.eventdata.targetUserName) foi configurado para CONSTRAINED DELEGATION pelo usuário $(win.eventdata.subjectUserName). Risco alto de comprometimento do objeto que sofreu delegação (ver atributo msDS-AllowedToDelegateTo) caso o $(win.eventdata.targetUserName) seja comprometido.</description>
+    <mitre>
+        <id>T1098</id>
+        <id>T1558</id>
+    </mitre>
+</rule>
+
+<!-- Monitoramento de configuração de RBCD -->
+<rule id="110013" level="13">
+    <if_sid>60229</if_sid>
+    <options>no_full_log</options>
+    <field name="win.eventdata.attributeLDAPDisplayName" type="pcre2">(?i)msDS-AllowedToActOnBehalfOfOtherIdentity</field>
+    <field name="win.eventdata.operationType">%%14674</field> <!-- alerta apenas adição de RBCD e não sua remoção -->
+    <description>Active Directory: Configuração de RBCD (Resource-Based Constrained Delegation) detectada no objeto $(win.eventdata.objectDN), realizada pelo usuário usuário $(win.eventdata.subjectUserName) . Verifique o atributo PrincipalsAllowedToDelegateToAccount do objeto.</description>
+    <mitre>
+        <id>T1098</id>
+        <id>T1558</id>
+    </mitre>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Monitoramento de ataques de DCSync -->
+<rule id="110014" level="15" ignore="10">
+    <if_group>windows</if_group>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4662$</field>
+    <field name="win.eventdata.properties" type="pcre2">\{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2\}</field>
+    <!-- Ignora DCSync vindo do usuário MSOL (sincronismo do Entra ID Connect) -->
+    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^MSOL_7dd2c274f37e$</field>
+    <description>Active Directory: CRÍTICO - Ataque DCSync detectado. O usuário $(win.eventdata.subjectUserName) solicitou replicação de segredos, extraindo a base de hashes de senhas do AD.</description>
+    <mitre>
+        <id>T1003.006</id>
+    </mitre>
+</rule>
+<!-- Essa regra descarta DCSync vindo de Domain Controllers. Isso porque não é possível negar uma CDB List no Wazuh. -->
+<rule id="110015" level="0">
+    <if_sid>110014</if_sid>
+    <list field="win.eventdata.subjectUserName" lookup="match_key">etc/lists/domain_controllers</list>
+    <description>[Descarte] Legítimo: Replicação (DCSync) realizada por um Domain Controller confiável. O alerta será descartado (level 0)</description>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Monitoramento de acessos à Tier 0 exclusivamente por usuários Tier 0 -->
+<!-- Alerta por autenticações em servidores Tier 0. -->
+<rule id="110016" level="12" ignore="30">
+    <if_group>windows</if_group>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4624$</field>
+    <field name="win.eventdata.logonType">^2$|^10$</field>
+    <list field="win.system.computer" lookup="match_key">etc/lists/t0_servers</list>
+    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">\$$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">^ANONYMOUS LOGON$|^SYSTEM$|^NETWORK SERVICE$|^LOCAL SERVICE$|^DWM-|^UMFD-</field>
+    <description>Active Directory: CRÍTICO - Acesso Admin (RDP/Console) em T0 por $(win.eventdata.targetUserName).</description>
+    <mitre>
+        <id>T1078</id>
+    </mitre>
+</rule>
+<!-- Descarta o alerta quando o usuário for da Tier 0 -->
+<rule id="110017" level="0">
+    <if_sid>110016</if_sid>
+    <list field="win.eventdata.targetUserName" lookup="match_key">etc/lists/t0_users</list>
+    <description>[Descarte] Logon Tier 0 Autorizado.</description>
+</rule>
+
+<!-- Alerta por execuções de comandos de usuários não Tier 0 em ativos Tier 0 -->
+<rule id="110018" level="12" ignore="10">
+    <if_group>windows</if_group> <!--67027-->
+    <if_sid>67027</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4688$</field>
+    <list field="win.system.computer" lookup="match_key">etc/lists/t0_servers</list>
+    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">\$$|^SYSTEM$|^NETWORK SERVICE$|^LOCAL SERVICE$|^DWM-|^UMFD-</field>
+    <description>TIER 0 VIOLATION: O usuário $(win.eventdata.subjectUserName) (Não-Tier 0) executou comando no servidor Tier 0 $(win.system.computer). Processo: $(win.eventdata.newProcessName)</description>
+    <mitre>
+        <id>T1059</id>
+        <id>T1021.006</id>
+    </mitre>
+</rule>
+<!-- Descarta o alerta quando o usuário for da Tier 0 -->
+<rule id="110019" level="0">
+    <if_sid>110018</if_sid>
+    <list field="win.eventdata.subjectUserName" lookup="match_key">etc/lists/t0_users</list>
+    <description>[Descarte] Execução autorizada por Admin Tier 0.</description>
+</rule>
+
+<!--
+<rule id="110020" level="0">
+    <if_sid>110018</if_sid>
+    <field name="win.eventdata.subjectUserName" type="pcre2">^svc_wazuh_agent$|^svc_backup_exec$</field>
+    <description>[Descarte] Execução autorizada por conta de serviço.</description>
+</rule> -->
+
+<!--
+<rule id="110119" level="13">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID">^4688$</field>
+    <list field="win.system.computer" lookup="match_key">etc/lists/t0_servers</list>
+    <field name="win.eventdata.parentProcessName" type="pcre2">(?i)WmiPrvSE\.exe$</field>
+    <field name="win.eventdata.newProcessName" type="pcre2">(?i)cmd\.exe$|powershell\.exe$</field>
+    <description>LATERAL MOVEMENT: Execução remota via WMI (WmiExec/NetExec) detectada em $(win.system.computer). Processo: $(win.eventdata.newProcessName)</description>
+    <mitre>
+        <id>T1047</id>
+        <id>T1059.003</id>
+    </mitre>
+</rule> -->
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Monitoramento de eventos relacionados ao Windows Defender -->
+
+<!-- Desativação do Windows Defender Real-Time Protection (EventID 5001) -->
+<rule id="110021" level="13">
+    <if_sid>62152</if_sid>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^5001$</field>
+    <description>Windows Defender: CRÍTICO - O Windows Defender Real-Time Protection foi desativado no host $(win.system.computer).</description>
+    <mitre>
+        <id>T1562.001</id>
+    </mitre>
+    <group>pci_dss_5.1,pci_dss_10.2.6,gdpr_IV_35.7.d,nist_800_53_SI.3,</group>
+</rule>
+
+<!-- Desativação do Windows Defender Tamper Protection (EventID 5007) -->
+<rule id="110022" level="15">
+    <if_sid>62154</if_sid>
+    <options>no_full_log</options>
+    <field name="win.eventdata.new Value" type="pcre2">HKLM.*TamperProtection\s*=\s*0x4</field>
+    <description>Windows Defender: CRÍTICO - Tamper Protection desativado no host $(win.system.computer).</description>
+    <mitre><id>T1562.001</id></mitre>
+</rule>
+
+<!-- Adição de pasta em exclusão no Windows Defender (EventID 5007) -->
+<rule id="110023" level="12">
+    <if_sid>62154</if_sid>
+    <options>no_full_log</options>
+    <field name="win.eventdata.new Value" type="pcre2">HKLM.*Exclusions.*.*=\s*0x0</field>
+    <description>Windows Defender: ALERTA - Uma nova exclusão foi adicionada ao Windows Defender no host $(win.system.computer).</description>
+    <mitre>
+        <id>T1562.001</id>
+    </mitre>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<!-- Monitoramento de alterações suspeitas de configuração de serviços (Windows Event Log, Wazuh, OssecSvc) -->
+<rule id="110024" level="13">
+    <if_sid>61104</if_sid>
+    <field name="win.eventdata.param1" type="pcre2">Windows Event Log|Wazuh|OssecSvc</field>
+    <description>Comportamento suspeito: O serviço de segurança $(win.eventdata.param1) foi modificado no host $(win.system.computer). Status alterado de '$(win.eventdata.param2)' para '$(win.eventdata.param3)'.</description>
+    <mitre>
+        <id>T1562.001</id>
+    </mitre>
+</rule>
+
+<!-- Monitoramento de limpeza de logs -->
+<rule id="110025" level="14">
+    <!-- <if_group>windows</if_group>   83200,63104 -->
+    <if_sid>83200,63104</if_sid>
+    <field name="win.system.eventID">^1102$|^104$</field>
+    <description>Comportamento suspeito: O canal de log $(win.logFileCleared.channel) foi limpo manualmente pelo usuário $(win.logFileCleared.subjectUserName) em $(win.system.computer).</description>
+    <mitre>
+        <id>T1070.001</id>
+    </mitre>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+</group>
