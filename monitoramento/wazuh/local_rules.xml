@@ -26,6 +26,7 @@
     <field name="win.eventdata.attributeLDAPDisplayName">^servicePrincipalName$</field>
     <field name="win.eventdata.subjectUserName" negate="yes">^SYSTEM$</field>
     <description>Active Directory: Alteração de SPN ($(win.eventdata.attributeValue)) do objeto $(win.eventdata.objectDN) realizado por $(win.eventdata.subjectUserName) </description>
+    <info type="text">Verifique o campo data.win.system.message / Operation Type, para saber se é inclusão ou exclusão</info>
     <mitre>
       <id>T1098</id>
     </mitre>
