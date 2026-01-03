@@ -91,6 +91,7 @@
 <rule id="110008" level="14" timeframe="600" ignore="10">
     <if_sid>60106,60118,60200,92652</if_sid>
     <if_matched_sid>110007</if_matched_sid>
+    <options>no_full_log</options>
     <same_field>win.eventdata.ipAddress</same_field>
     <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">^ANONYMOUS LOGON$|.*\$</field>
     <description>Active Directory: CRÍTICO - Autenticação com SUCESSO do usuário $(win.eventdata.targetUserName) detectada após Password Spray vindo de $(win.eventdata.ipAddress). O usuário foi bloqueado.</description>
@@ -135,22 +136,6 @@
         <id>T1098</id>
     </mitre>
 </rule>
-
-<!-- Monitoramento de contas especiais (break the glass): ações feitas pela conta  -->
-<!-- 
-<rule id="110011" level="15">
-    <if_group>windows</if_group>
-    <field name="win.eventdata.subjectUserName" type="pcre2">(?ix)^(
-        breaktheglass_da|
-        btg_da
-    )(?:$|@)
-    </field>
-    <field name="win.system.eventID" type="pcre2" negate="yes">^4624$|^4625$</field> 
-    <description>Active Directory: CRÍTICO - A conta especial $(win.eventdata.subjectUserName) está executando ações ativas no ambiente. Verifique imediatamente se há justificativa para o seu uso. Em caso negativo, desativá-la imediatamente.</description>
-    <mitre>
-        <id>T1078</id>
-    </mitre>
-</rule> -->
 
 <!--=============================================================================================================================================================================================-->
 
@@ -261,27 +246,6 @@
     <list field="win.eventdata.subjectUserName" lookup="match_key">etc/lists/t0_users</list>
     <description>[Descarte] Execução autorizada por Admin Tier 0.</description>
 </rule>
-
-<!--
-<rule id="110020" level="0">
-    <if_sid>110018</if_sid>
-    <field name="win.eventdata.subjectUserName" type="pcre2">^svc_wazuh_agent$|^svc_backup_exec$</field>
-    <description>[Descarte] Execução autorizada por conta de serviço.</description>
-</rule> -->
-
-<!--
-<rule id="110119" level="13">
-    <if_group>windows</if_group>
-    <field name="win.system.eventID">^4688$</field>
-    <list field="win.system.computer" lookup="match_key">etc/lists/t0_servers</list>
-    <field name="win.eventdata.parentProcessName" type="pcre2">(?i)WmiPrvSE\.exe$</field>
-    <field name="win.eventdata.newProcessName" type="pcre2">(?i)cmd\.exe$|powershell\.exe$</field>
-    <description>LATERAL MOVEMENT: Execução remota via WMI (WmiExec/NetExec) detectada em $(win.system.computer). Processo: $(win.eventdata.newProcessName)</description>
-    <mitre>
-        <id>T1047</id>
-        <id>T1059.003</id>
-    </mitre>
-</rule> -->
 
 <!--=============================================================================================================================================================================================-->
 
