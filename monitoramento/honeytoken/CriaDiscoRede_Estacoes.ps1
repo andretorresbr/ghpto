@@ -2,7 +2,7 @@
 $networkPath = "\\srv-fileserver\usuarios"
 $driveLetter = "X:"
 $username = "corp\svc_wkstasks"
-$password = "test3@tar3f4$"
+$password = "test3@tar3f4$12345678"
 
 # Create a secure password
 $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
