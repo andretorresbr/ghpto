@@ -12,6 +12,7 @@
     <options>no_full_log</options>
     <field name="win.system.eventID">^4769$</field>
     <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">\$$|^SYSTEM$</field>
     <description>Active Directory: Possível ataque de Kerberoasting (RC4 Ticket Request) do usuário $(win.eventdata.targetUserName) na conta $(win.eventdata.serviceName)</description>
     <mitre>
       <id>T1558.003</id>
@@ -42,6 +43,7 @@
     <field name="win.eventdata.preAuthType">^0$|^0x0$</field>
     <field name="win.eventdata.status">^0x0$</field>
     <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">\$$</field>
+    <field name="win.eventdata.ipAddress" type="pcre2" negate="yes">^127\.0\.0\.1$|^::1$|^-$</field>
     <description>Active Directory: Possível AS-REP Roasting (Kerberos Pre-Auth Disabled) contra usuário $(win.eventdata.targetUserName). Origem: $(win.eventdata.ipAddress)</description>
     <mitre>
       <id>T1558.004</id>
@@ -76,12 +78,10 @@
     <if_matched_sid>110006</if_matched_sid>
     <options>no_full_log</options>
     <same_field>win.eventdata.ipAddress</same_field>
-    <field name="win.eventdata.ipAddress" type="pcre2" negate="yes">^127\.0\.0\.1$|^::1$</field>
+    <field name="win.eventdata.ipAddress" type="pcre2" negate="yes">^127\.0\.0\.1$|^::1$|^-$</field>
     <description>Active Directory: Possível Password Spray (NTLM/Kerberos). O IP $(win.eventdata.ipAddress) gerou pelo menos 15 falhas de autenticação em menos de 2 minutos.</description>
     <mitre>
-      <id>T1110.001</id>
       <id>T1110.003</id>
-      <id>T1110.004</id>
     </mitre>
 </rule>
 
@@ -93,10 +93,9 @@
     <if_matched_sid>110007</if_matched_sid>
     <options>no_full_log</options>
     <same_field>win.eventdata.ipAddress</same_field>
-    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">^ANONYMOUS LOGON$|.*\$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">^ANONYMOUS LOGON$|.*\$|^SYSTEM$</field>
     <description>Active Directory: CRÍTICO - Autenticação com SUCESSO do usuário $(win.eventdata.targetUserName) detectada após Password Spray vindo de $(win.eventdata.ipAddress). O usuário foi bloqueado.</description>
     <mitre>
-        <id>T1110.003</id>
         <id>T1078.002</id>
     </mitre>
 </rule>
@@ -108,7 +107,7 @@
 <rule id="110009" level="12">
     <if_sid>60113</if_sid>
     <options>no_full_log</options>
-    <field name="win.system.eventID" type="pcre2" negate="yes">^4737$|^4735$|^4755$</field>
+    <field name="win.system.eventID">^4728$|^4729$|^4732$|^4733$|^4756$|^4757$</field>
     <list field="win.eventdata.targetUserName" lookup="match_key">etc/lists/tier0_groups</list>
     <description>Active Directory: Alteração de membro no grupo privilegiado $(win.eventdata.targetUserName) realizada pelo usuário $(win.eventdata.subjectUserName). O usuário adicionado/removido foi o $(win.eventdata.memberName)</description>
     <info type="text">Verificar o campo data.win.system.message para saber se é inclusão ou exclusão</info>
@@ -189,7 +188,7 @@
     <field name="win.system.eventID">^4662$</field>
     <field name="win.eventdata.properties" type="pcre2">\{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2\}</field>
     <!-- Ignora DCSync vindo do usuário MSOL (sincronismo do Entra ID Connect) -->
-    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^MSOL_7dd2c274f37e$</field>
+    <!-- <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^MSOL_7dd2c274f37e$</field> -->
     <description>Active Directory: CRÍTICO - Ataque DCSync detectado. O usuário $(win.eventdata.subjectUserName) solicitou replicação de segredos, extraindo a base de hashes de senhas do AD.</description>
     <mitre>
         <id>T1003.006</id>
@@ -357,10 +356,41 @@
 
 <!--=============================================================================================================================================================================================-->
 
+<!-- Monitoramento do arquivo honeypot CriaDiscoRede_Estacoes.ps1 no SYSVOL -->
+<rule id="110030" level="12">
+    <if_group>windows</if_group>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4663$</field>  
+    <field name="win.eventdata.objectName" type="pcre2">(?i)CriaDiscoRede_Estacoes\.ps1$</field>
+    <field name="win.eventdata.accessMask" type="pcre2">0x1$|%%4416</field> 
+    <description>[Honeypot] O script CriaDiscoRede_Estacoes.ps1, que possui credenciais inválidas, foi LIDO por $(win.eventdata.subjectUserName).</description>
+    <mitre>
+        <id>T1059.001</id>
+    </mitre>
+</rule>
 
+<!-- Monitoramento de tentativa de ação da conta honeytoken svc_wkstasks -->
+<rule id="110031" level="15">
+    <if_group>windows</if_group>
+    <options>no_full_log</options>
+    <field name="win.system.eventID">^4624$|^4625$|^4768$|^4769$|^4771$|^4776$|^4648$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)svc_wkstasks</field>
+    <description>[Honeypot] HONEYTOKEN ACIONADO - Tentativa de uso da conta isca $(win.eventdata.targetUserName) detectada na origem $(win.eventdata.ipAddress).</description>
+    <mitre>
+        <id>T1078</id>
+        <id>T1003</id>
+        <id>T1566</id>
+    </mitre>
+</rule>
 
 <!--=============================================================================================================================================================================================-->
 
+<rule id="110055" level="0">
+    <if_sid>67027</if_sid>
+    <list field="win.eventdata.newProcessName" lookup="match_key">etc/lists/process-whitelist</list>
+    <description>[Descarte] Tuning: Processo legítimo ignorado (listado na CDB process-whitelist).</description>
+</rule>
 
+<!--=============================================================================================================================================================================================-->
 
 </group>
