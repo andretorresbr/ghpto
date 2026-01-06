@@ -65,10 +65,10 @@
 <!--=============================================================================================================================================================================================-->
 
 <!-- Detecta os eventos básicos de falha de autenticação do NTLM (EventID 4625) e Kerberos (EventID 4771) -->
-<rule id="110006" level="0">
+<rule id="110006" level="1">
     <if_sid>60104,60122</if_sid>
     <field name="win.system.eventID">^4625$|^4771$</field>
-    <options>no_full_log</options>
+    <options>no_log</options>
     <description>Auditoria: Coletor de Falhas de Autenticação (NTLM 4625 / Kerberos 4771)</description>
 </rule>
 
