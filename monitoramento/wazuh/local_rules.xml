@@ -385,12 +385,46 @@
 
 <!--=============================================================================================================================================================================================-->
 
-<rule id="110055" level="0">
+<rule id="110032" level="12">
+  <if_group>sysmon_event1</if_group>
+  <options>no_full_log</options>
+  <list field="win.eventdata.originalFileName" lookup="match_key">etc/lists/rmm_tools</list>
+  <description>[LOLRMM] Ferramenta de administração remota $(win.eventdata.originalFileName) detectada no host $(win.system.computer) executada pelo usuário $(win.eventdata.user).</description>
+  <mitre>
+    <id>T1219</id>
+  </mitre>
+</rule>
+
+<rule id="110033" level="12">
+  <if_group>sysmon_event1</if_group>
+  <options>no_full_log</options>
+  <list field="win.eventdata.description" lookup="match_key">etc/lists/rmm_tools-description</list>
+  <description>[LOLRMM] Ferramenta de administração remota $(win.eventdata.description) detectada no host $(win.system.computer) executada pelo usuário $(win.eventdata.user).</description>
+  <mitre>
+    <id>T1219</id>
+  </mitre>
+</rule>
+
+<rule id="110034" level="12">
+  <if_group>sysmon_event_22</if_group>
+  <options>no_full_log</options>
+  <list field="win.eventdata.queryName" lookup="match_key">etc/lists/rmm_domains</list>
+  <description>[LOLRMM] Comunicação de rede do usuário $(win.eventdata.user) no host $(win.system.computer) com domínio suspeito (categoria Administração Remota): $(win.eventdata.queryName)</description>
+  <mitre>
+    <id>T1071.001</id>
+  </mitre>
+</rule>
+
+<!--=============================================================================================================================================================================================-->
+
+<rule id="110099" level="0">
     <if_sid>67027</if_sid>
     <list field="win.eventdata.newProcessName" lookup="match_key">etc/lists/process-whitelist</list>
     <description>[Descarte] Tuning: Processo legítimo ignorado (listado na CDB process-whitelist).</description>
 </rule>
 
 <!--=============================================================================================================================================================================================-->
+
+
 
 </group>
