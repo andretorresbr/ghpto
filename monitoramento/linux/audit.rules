@@ -1,66 +1,97 @@
 ## -------------------------------------------------------------------------
-## CONFIGURAÇÃO OTIMIZADA PARA PURPLE TEAM & WAZUH
+## AUDIT RULES BASEADO EM NEO23X0 (Florian Roth)
+## https://github.com/Neo23x0/auditd/blob/master/audit.rules
 ## -------------------------------------------------------------------------
 
-# Primeiro, deleta todas as regras antigas para começar limpo
+# Remover regras existentes
 -D
 
-# Define o tamanho do buffer (Aumentar para evitar perda de logs em ataques rápidos)
+# Tamanho do Buffer (Aumentado para evitar perda em carga alta)
 -b 8192
 
-# Em caso de falha do auditd, o sistema continua rodando (0=silent, 1=printk, 2=panic)
+# Em caso de falha (0=silent, 1=printk, 2=panic)
 -f 1
 
-## -------------------------------------------------------------------------
-## 1. MONITORAMENTO DE EXECUÇÃO DE COMANDOS (A "Caixa Preta")
-## Isso vai logar TODO comando executado no servidor. É o "ouro" da forense.
-## -------------------------------------------------------------------------
--a always,exit -F arch=b64 -S execve -k audit_exec
--a always,exit -F arch=b32 -S execve -k audit_exec
+## r = read, w = write, a = mudança de atributo (permissões/metadados)
 
 ## -------------------------------------------------------------------------
-## 2. MONITORAMENTO DE IDENTIDADE E CREDENCIAIS (Seu caso de uso atual)
-## Detecta leitura ou escrita em arquivos de senha e grupos.
-## -p wa (Write/Attribute change) - FIM
-## -p r (Read) - Espionagem
+## AUDIT RULES: MASTER CLASS PURPLE TEAM
+## Fusão: Lab Custom + Florian Roth + Novas Sugestões
 ## -------------------------------------------------------------------------
--w /etc/group -p wa -k identity_modification
--w /etc/passwd -p wa -k identity_modification
--w /etc/gshadow -p wa -k identity_modification
+
+
+## -------------------------------------------------------------------------
+## 1. DETECÇÃO DE ATAQUES (ALTA PRIORIDADE - CASOS DE USO)
+## -------------------------------------------------------------------------
+
+# REVERSE SHELL (O "Pulo do Gato")
+# Detecta se o bash tentar iniciar uma conexão de rede (saída para a internet)
+-a always,exit -F arch=b64 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
+-a always,exit -F arch=b64 -F exe=/usr/bin/bash -F success=1 -S connect -k remote_shell
+# (Versões 32 bits, caso necessário)
+-a always,exit -F arch=b32 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
+
+# ESPIONAGEM (Credential Access)
 -w /etc/shadow -p rwa -k shadow_access
--w /etc/security/opasswd -p wa -k identity_modification
+-w /etc/gshadow -p rwa -k shadow_access
+-w /etc/passwd -p wa -k identity_modification
+-w /etc/group -p wa -k identity_modification
 
-## -------------------------------------------------------------------------
-## 3. MONITORAMENTO DE SUDOERS (Escalação de Privilégio)
-## -------------------------------------------------------------------------
--w /etc/sudoers -p wa -k scope_change
--w /etc/sudoers.d/ -p wa -k scope_change
-
-## -------------------------------------------------------------------------
-## 4. MONITORAMENTO DE PERSISTÊNCIA (Cron e Systemd)
-## -------------------------------------------------------------------------
--w /etc/cron.d/ -p wa -k cron_modification
--w /etc/cron.daily/ -p wa -k cron_modification
--w /etc/cron.hourly/ -p wa -k cron_modification
--w /etc/cron.weekly/ -p wa -k cron_modification
--w /etc/cron.monthly/ -p wa -k cron_modification
--w /etc/crontab -p wa -k cron_modification
--w /var/spool/cron/crontabs/ -p wa -k cron_modification
-
-## -------------------------------------------------------------------------
-## 5. MONITORAMENTO DE RECONHECIMENTO (Comandos suspeitos)
-## Atacantes usam isso logo que entram.
-## -------------------------------------------------------------------------
--w /usr/bin/whoami -p x -k recon
--w /usr/bin/id -p x -k recon
--w /usr/bin/wget -p x -k download_tool
--w /usr/bin/curl -p x -k download_tool
+# DISCOVERY (Network Tools Execution)
 -w /usr/bin/ncat -p x -k network_tool
 -w /usr/bin/nc -p x -k network_tool
 -w /bin/nc -p x -k network_tool
+-w /usr/bin/netcat -p x -k network_tool
+-w /usr/bin/nmap -p x -k network_tool
+-w /usr/bin/socat -p x -k network_tool
+-w /usr/bin/curl -p x -k network_tool
+-w /usr/bin/wget -p x -k network_tool
 
 ## -------------------------------------------------------------------------
-## 6. SELF-DEFENSE (Detecta se tentarem parar o log)
+## 2. PERSISTÊNCIA & CONFIGURAÇÃO (Novas regras incluídas)
+## -------------------------------------------------------------------------
+
+# Shell Profiles (Onde malwares se escondem para iniciar com o usuário)
+-w /etc/profile.d/ -p wa -k shell_profiles
+-w /etc/profile -p wa -k shell_profiles
+-w /etc/bashrc -p wa -k shell_profiles
+-w /etc/csh.cshrc -p wa -k shell_profiles
+-w /etc/zsh/ -p wa -k shell_profiles
+
+# Network Modifications (Redirecionamento de DNS / Hosts)
+-w /etc/hosts -p wa -k network_modifications
+-w /etc/network/ -p wa -k network_modifications
+-w /etc/issue -p wa -k network_modifications
+-w /etc/hostname -p wa -k network_modifications
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -k network_modifications
+
+# Cron (Persistência Clássica)
+-w /etc/cron.d/ -p wa -k cron
+-w /etc/cron.daily/ -p wa -k cron
+-w /etc/cron.hourly/ -p wa -k cron
+-w /etc/cron.weekly/ -p wa -k cron
+-w /etc/cron.monthly/ -p wa -k cron
+-w /etc/crontab -p wa -k cron
+-w /var/spool/cron/crontabs/ -p wa -k cron
+
+## -------------------------------------------------------------------------
+## 3. RECONHECIMENTO (Discovery)
+## -------------------------------------------------------------------------
+-w /usr/bin/whoami -p x -k recon
+-w /usr/bin/id -p x -k recon
+-w /bin/hostname -p x -k recon
+-w /bin/uname -p x -k recon
+
+## -------------------------------------------------------------------------
+## 4. SELF-DEFENSE
+## Detecta tentativa de apagar logs ou parar a auditoria
 ## -------------------------------------------------------------------------
 -w /var/log/audit/ -k audit_log_tampering
 -w /etc/audit/ -p wa -k audit_config_change
+-w /etc/libaudit.conf -p wa -k audit_config_change
+
+## -------------------------------------------------------------------------
+## 5. MONITORAMENTO GERAL (Base do Florian Roth)
+## -------------------------------------------------------------------------
+-a always,exit -F arch=b64 -S execve -k audit_exec
+-a always,exit -F arch=b32 -S execve -k audit_exec
