@@ -1,7 +1,9 @@
 ## -------------------------------------------------------------------------
-## AUDIT RULES BASEADO EM NEO23X0 (Florian Roth)
+## AUDIT RULES BASEADO EM NEO23X0 (Florian Roth) e socfortress
 ## https://github.com/Neo23x0/auditd/blob/master/audit.rules
+## https://github.com/socfortress/Wazuh-Rules/blob/main/Auditd/auditd.conf
 ## -------------------------------------------------------------------------
+
 
 # Remover regras existentes
 -D
