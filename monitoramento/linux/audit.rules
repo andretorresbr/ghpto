@@ -4,7 +4,6 @@
 ## https://github.com/socfortress/Wazuh-Rules/blob/main/Auditd/auditd.conf
 ## -------------------------------------------------------------------------
 
-
 # Remover regras existentes
 -D
 
@@ -34,8 +33,8 @@
 -a always,exit -F arch=b32 -F exe=/bin/bash -F success=1 -S connect -k remote_shell
 
 # ESPIONAGEM (Credential Access)
--w /etc/shadow -p rwa -k shadow_access
--w /etc/gshadow -p rwa -k shadow_access
+-w /etc/shadow -p r -k shadow_access
+-w /etc/gshadow -p r -k shadow_access
 #-w /etc/passwd -p wa -k identity_modification
 #-w /etc/group -p wa -k identity_modification
 
@@ -90,7 +89,7 @@
 ## 4. SELF-DEFENSE
 ## Detecta tentativa de apagar logs ou parar a auditoria
 ## -------------------------------------------------------------------------
--w /var/log/audit/ -k audit_log_tampering
+-w /var/log/audit/ -p wa -k audit_log_tampering
 -w /etc/audit/ -p wa -k audit_config_change
 -w /etc/libaudit.conf -p wa -k audit_config_change
 
