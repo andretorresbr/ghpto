@@ -457,6 +457,8 @@
     </rule>
 </group>
 
+<!--=============================================================================================================================================================================================-->
+
 <!-- Regra que dispara a Active Response de scan de Yara, apenas para diretórios específicos -->
 <group name="yara,yara_trigger,">
   <rule id="100101" level="3">
@@ -478,6 +480,8 @@
     </rule>
 </group>
 
+<!--=============================================================================================================================================================================================-->
+
 <!-- Monitoramento de atividades relacionadas ao Cron -->
 <group name="syscheck,linux,gpg13_4.1,persistence_detection,">
 <rule id="100103" level="12">
@@ -490,17 +494,107 @@
 </rule>
 </group>
 
+<!--=============================================================================================================================================================================================-->
+
 <!-- Monitoramento de atividades relacionadas à permissões de sudoers e grupos do Linux -->
 <group name="syscheck,linux,gpg13_4.1,privilege_escalation,">
 <rule id="100104" level="12">
     <if_sid>550,554,553</if_sid>
-    <field name="file" type="pcre2">^/etc/group$|^/etc/sudoers$</field>
-    <description>ALERTA CRÍTICO: Alteração em permissões administrativas (Sudoers/Groups) em $(file)</description>
+    <field name="file" type="pcre2">^/etc/group$|^/etc/sudoers$|^/etc/sudoers\.d</field>
+    <description>Comportamento suspeito: Alteração em permissões em $(file)</description>
     <mitre>
         <id>T1078.003</id>
+    </mitre>
+</rule>
+
+
+<!-- Monitoramento de atividades relacionadas à criação/alteração de usuários do Linux -->
+<rule id="100105" level="12">
+    <if_sid>550,554,553</if_sid>
+    <field name="file" type="pcre2">^/etc/shadow$</field>
+    <description>Comportamento suspeito: Modificação no arquivo de usuários $(file). Provável adição ou remoção de usuário local.</description>
+    <mitre>
+        <id>T1098</id>
     </mitre>
 </rule>
 </group>
 
 <!--=============================================================================================================================================================================================-->
+
+<!-- Leitura de credenciais do /etc/shadow -->
+<group name="auditd,">
+<rule id="100106" level="12">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">shadow_access</field>
+    <field name="audit.exe" type="pcre2" negate="yes">^/usr/bin/sudo$|^/usr/bin/su$|^/usr/sbin/sshd$|^/usr/bin/login$|^/usr/sbin/cron$|^/var/ossec/bin/.*$|^/usr/bin/diff$|^/usr/sbin/userdel$|^/usr/sbin/useradd$|^/usr/bin/passwd$|^/usr/sbin/usermod$|^/usr/bin/gpasswd$|^/usr/bin/perl$|^/usr/lib/polkit-1/*|^/usr/lib/systemd/systemd-executor$</field>
+    <description>Comportamento suspeito [$(audit.key)]: Tentativa de leitura de credenciais no arquivo $(audit.file.name). Leitura com sucesso? $(audit.success).</description>
+    <info>Verifique o campo data.audit.success (no significa que o acesso foi negado)</info>
+    <mitre>
+        <id>T1003.008</id>
+    </mitre>
+</rule>
+
+<!-- Shell reverso usando bash -->
+<rule id="100107" level="13">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">remote_shell</field>
+    <description>Comportamento suspeito [$(audit.key)]: Shell reverso detectado! Bash iniciou conexão de rede.</description>
+    <mitre>
+        <id>T1059.004</id>
+    </mitre>
+</rule>
+
+<!-- Uso de ferramenta de rede -->
+<rule id="100108" level="8">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">network_tool</field>
+    <description>Comportamento suspeito [$(audit.key)]: Ferramenta de rede/ataque executada: $(audit.file.name)</description>
+    <mitre>
+      <id>T1046</id>
+    </mitre>
+</rule>
+
+<!-- Alteração de profile de shell -->
+<rule id="100109" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">shell_profiles</field>
+    <description>Comportamento suspeito [$(audit.key)]: Modificação em perfil de Shell ($(audit.file.name)) usando $(audit.exe).</description>
+    <mitre>
+        <id>T1546.004</id>
+    </mitre>
+</rule>
+
+<!-- Alteração de profile de shell -->
+<rule id="100110" level="8">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">network_modifications</field>
+    <description>Comportamento suspeito [$(audit.key)]: Configuração de rede alterada ($(audit.file.name)) usando $(audit.exe).</description>
+    <mitre>
+        <id>T1565.001</id>
+    </mitre>
+</rule>
+
+<!-- Alteração de auditoria do sistema -->
+<rule id="100111" level="13">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">audit_log_tampering|audit_config_change</field>
+    <description>Comportamento suspeito [$(audit.key)]: Tentativa de adulterar a auditoria do sistema: ($(audit.file.name))</description>
+    <mitre>
+      <id>T1070.002</id>
+    </mitre>
+</rule>
+
+<!-- Alteração de regras do Auditd em memória -->
+<rule id="100112" level="13">
+    <if_sid>80700</if_sid>
+    <!-- <field name="audit.key">audit_exec</field> -->
+    <field name="audit.exe" type="pcre2">/auditctl$</field>
+    <description>Comportamento suspeito [$(audit.key)]: Comando de manipulação de auditoria executado: $(audit.exe) $(audit.execve.a1) $(audit.execve.a2)</description>
+    <mitre>
+        <id>T1562.001</id>
+    </mitre>
+</rule>
+
+</group>
+
 <!--=============================================================================================================================================================================================-->
