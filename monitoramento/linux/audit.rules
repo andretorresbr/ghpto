@@ -36,13 +36,15 @@
 # ESPIONAGEM (Credential Access)
 -w /etc/shadow -p rwa -k shadow_access
 -w /etc/gshadow -p rwa -k shadow_access
--w /etc/passwd -p wa -k identity_modification
--w /etc/group -p wa -k identity_modification
+#-w /etc/passwd -p wa -k identity_modification
+#-w /etc/group -p wa -k identity_modification
 
 # DISCOVERY (Network Tools Execution)
 -w /usr/bin/ncat -p x -k network_tool
 -w /usr/bin/nc -p x -k network_tool
 -w /bin/nc -p x -k network_tool
+-w /usr/bin/nc.openbsd -p x -k network_tool
+-w /usr/bin/nc.traditional -p x -k network_tool
 -w /usr/bin/netcat -p x -k network_tool
 -w /usr/bin/nmap -p x -k network_tool
 -w /usr/bin/socat -p x -k network_tool
