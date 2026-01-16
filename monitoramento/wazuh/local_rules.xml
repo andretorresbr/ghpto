@@ -328,20 +328,20 @@
 </rule>
 
 <!-- Eleva o nível do alerta das regras 504 e 506 (Wazuh Agent parado) -->
-<rule id="110027" level="12">
+<!-- <rule id="110027" level="12">
     <if_sid>504,506</if_sid>
     <options>no_full_log</options>
     <description>CRÍTICO: Wazuh Agent interrompido (possível tentativa de evasão ou sabotagem). Acesse o host e investigue os logs no canal System, verificando se o serviço Wazuh ou Windows Event Log foram parados manualmente (EventID=7036).</description>
     <mitre>
     <id>T1562.001</id>
     </mitre>
-</rule>
+</rule> -->
 
 <!-- Alerta vindo de SYSLOG (rule 1) de monitoramento de script local (mapeado no agent.conf / localfile ServiceGuard.log ) -->
 <rule id="110028" level="12">
     <if_sid>1</if_sid> 
     <regex>CRITICO: O servico \S+ estava PARADO</regex>
-    <description>DEFESA ATIVA: Serviço crítico (EventLog/Wazuh) foi reiniciado automaticamente pelo script ServiceGuard.</description>
+    <description>DEFESA ATIVA: Serviço crítico (EventLog/Sysmon/Wazuh) foi reiniciado automaticamente pelo script ServiceGuard.</description>
     <mitre>
       <id>T1562.002</id>
     </mitre>
