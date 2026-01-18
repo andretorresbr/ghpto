@@ -1,4 +1,10 @@
 <!--=============================================================================================================================================================================================-->
+
+<!-- Lista de variáveis usadas no arquivo -->
+
+<!-- Lista de comandos PowerShell de ferramentas ofensivas -->
+<var name="offensive_tools_list">Export-PowerViewCSV|Get-IPAddress|Resolve-IPAddress|Convert-NameToSid|ConvertTo-SID|Convert-ADName|ConvertFrom-UACValue|Add-RemoteConnection|Remove-RemoteConnection|Invoke-UserImpersonation|Invoke-RevertToSelf|Request-SPNTicket|Get-DomainSPNTicket|Invoke-Kerberoast|Get-PathAcl|Get-DNSZone|Get-DomainDNSZone|Get-DNSRecord|Get-DomainDNSRecord|Get-NetDomain|Get-Domain|Get-NetDomainController|Get-DomainController|Get-NetForest|Get-Forest|Get-NetForestDomain|Get-ForestDomain|Get-NetForestCatalog|Get-ForestGlobalCatalog|Find-DomainObjectPropertyOutlier|Get-NetUser|Get-DomainUser|New-DomainUser|Set-DomainUserPassword|Get-UserEvent|Get-DomainUserEvent|Get-NetComputer|Get-DomainComputer|Get-ADObject|Get-DomainObject|Set-ADObject|Set-DomainObject|Get-ObjectAcl|Get-DomainObjectAcl|Add-ObjectAcl|Add-DomainObjectAcl|Invoke-ACLScanner|Find-InterestingDomainAcl|Get-NetOU|Get-DomainOU|Get-NetSite|Get-DomainSite|Get-NetSubnet|Get-DomainSubnet|Get-DomainSID|Get-NetGroup|Get-DomainGroup|New-DomainGroup|Find-ManagedSecurityGroups|Get-DomainManagedSecurityGroup|Get-NetGroupMember|Get-DomainGroupMember|Add-DomainGroupMember|Get-NetFileServer|Get-DomainFileServer|Get-DFSshare|Get-DomainDFSShare|Get-NetGPO|Get-DomainGPO|Get-NetGPOGroup|Get-DomainGPOLocalGroup|Find-GPOLocation|Get-DomainGPOUserLocalGroupMapping|Find-GPOComputerAdmin|Get-DomainGPOComputerLocalGroupMapping|Get-DomainPolicy|Get-NetLocalGroup|Get-NetLocalGroupMember|Get-NetShare|Get-NetLoggedon|Get-NetSession|Get-LoggedOnLocal|Get-RegLoggedOn|Get-NetRDPSession|Invoke-CheckLocalAdminAccess|Test-AdminAccess|Get-SiteName|Get-NetComputerSiteName|Get-Proxy|Get-WMIRegProxy|Get-LastLoggedOn|Get-WMIRegLastLoggedOn|Get-CachedRDPConnection|Get-WMIRegCachedRDPConnection|Get-RegistryMountedDrive|Get-WMIRegMountedDrive|Get-NetProcess|Get-WMIProcess|Find-InterestingFile|Invoke-UserHunter|Find-DomainUserLocation|Invoke-ProcessHunter|Find-DomainProcess|Invoke-EventHunter|Find-DomainUserEvent|Invoke-ShareFinder|Find-DomainShare|Invoke-FileFinder|Find-InterestingDomainShareFile|Find-LocalAdminAccess|Invoke-EnumerateLocalAdmin|Find-DomainLocalGroupMember|Get-NetDomainTrust|Get-DomainTrust|Get-NetForestTrust|Get-ForestTrust|Find-ForeignUser|Get-DomainForeignUser|Find-ForeignGroup|Get-DomainForeignGroupMember|Invoke-MapDomainTrust|Get-DomainTrustMapping|Invoke-Mimikatz|Invoke-MassMimikatz|Out-Minidump|Invoke-InternalMonologue|Invoke-TokenManipulation|Get-GPPPassword|Get-CachedGPPPassword|Invoke-CredentialInjection|Invoke-SafetyKatz|Invoke-AllChecks|Get-ModifiableService|Get-ModifiableServiceFile|Get-UnquotedService|Invoke-ServiceAbuse|Write-UserAddMSI|Write-ServiceBinary|Get-RegistryAlwaysInstallElevated|Get-ModifiableRegistryAutoRun|Invoke-Shellcode|Invoke-ReflectivePEInjection|Invoke-DllInjection|Invoke-WmiCommand|Invoke-BypassUAC|Invoke-PsExec|Find-AVSignature|Invoke-PowerShellTcp|Invoke-PowerShellTcpOneLine|Invoke-PowerShellUdp|Invoke-PoshRatHttps|Invoke-PsGcat|Gupt-Backdoor|Get-Keystrokes|Get-TimedScreenshot|Get-MicrophoneAudio|Get-WebcamImage|Invoke-NetRipper|Invoke-BloodHound|Invoke-SharpHound|Get-BloodHoundData|Invoke-ScriptSentry|Get-ConstrainedDelegation|Get-GPOEnumeration|Invoke-DomainEnumeration|Get-SQLInstanceLocal|Get-SQLInstanceBroadcast|Get-SQLInstanceDomain|Get-MSSQLLinkPasswords|Invoke-SQLDumpInfo|Invoke-SQLAudit|Invoke-SQLEscalatePriv|Invoke-SQLOSCmd|Get-SqlServerLinkCrawl|Get-MpPreference|Set-MpPreference|Get-AppLockerPolicy|Invoke-InveighRelay</var>
+
 <!--=============================================================================================================================================================================================-->
 
 <group name="windows, windows_security, active_directory,">
@@ -77,7 +83,7 @@
 
 <!-- Detecta password spray (diversas tentativas de login com falha vindo de um mesmo IP de origem) usando os logs de Security do DC. O threshold configurado é: 15 tentativas dentro de 2 minutos (120s) -->
 <!-- Baseia-se na regra anterior (110006) para detectar tanto password spray NTLM quanto Kerberos -->
-<rule id="110007" level="12" frequency="15" timeframe="120" ignore="60">
+<rule id="110007" level="12" frequency="15" timeframe="120">
     <if_matched_sid>110006</if_matched_sid>
     <options>no_full_log</options>
     <same_field>win.eventdata.ipAddress</same_field>
@@ -419,29 +425,26 @@
   </mitre>
 </rule>
 
+
+
 <!--=============================================================================================================================================================================================-->
+<!-- Monitoramento de comandos PowerShell de ferramentas ofensivas conhecidas -->
 
-<!--  Regras de descarte -->
-
-<rule id="110099" level="0">
-    <if_sid>67027</if_sid>
-    <list field="win.eventdata.newProcessName" lookup="match_key">etc/lists/process-whitelist</list>
-    <description>[Descarte] Tuning: Processo legítimo ignorado (listado na CDB process-whitelist).</description>
-</rule>
-
-<rule id="110098" level="0">
-    <if_sid>92213</if_sid>
-    <field name="win.eventdata.targetFilename" type="pcre2">(?i)__PSScriptPolicyTest_.*\.ps(1|m1|d1)$</field>
-    <description>[Descarte] Tuning: Arquivo de teste de política do PowerShell (Legítimo).</description>
-</rule>
-
-<rule id="92058" level="0" overwrite="yes">
-    <description>[Descarte] Application Compatibility Database launched</description>
+<rule id="110035" level="12">
+    <if_sid>91802</if_sid>
+    <field name="win.eventdata.messageNumber" type="pcre2">^1$</field>
+    <field name="win.eventdata.scriptBlockText">$offensive_tools_list</field>
+    <description>Offensive PowerShell Tool Detected: $(win.eventdata.scriptBlockText)</description>
+    <mitre>
+        <id>T1059.001</id>
+        <id>T1087.002</id>
+        <id>T1003</id>
+    </mitre>
+    <options>no_full_log</options>
 </rule>
 
 </group>
-
-<!--=============================================================================================================================================================================================-->
+<!--=============================================================================================================================================================================================-->  
 <!--=============================================================================================================================================================================================-->
 
 <group name="local,syslog,sshd,">
@@ -461,7 +464,7 @@
 
 <!-- Regra que dispara a Active Response de scan de Yara, apenas para diretórios específicos -->
 <group name="yara,yara_trigger,">
-  <rule id="100101" level="3">
+  <rule id="200101" level="3">
     <!-- Criação e alteração de arquivos -->
     <if_sid>550, 554</if_sid>
     <field name="file" type="pcre2">^/tmp|^/dev/shm|^/home|^/var/www/html</field>
@@ -471,7 +474,7 @@
 
 <!-- Alerta para quando o scan Yara detectar malware -->
 <group name="yara,malware,">
-    <rule id="100102" level="12">
+    <rule id="200102" level="12">
     <decoded_as>yara_decoder</decoded_as>
     <description>YARA: Malware detectado - Regra $(yara_rule) no arquivo $(yara_scanned_file)</description>
     <mitre>
@@ -484,7 +487,7 @@
 
 <!-- Monitoramento de atividades relacionadas ao Cron -->
 <group name="syscheck,linux,gpg13_4.1,persistence_detection,">
-<rule id="100103" level="12">
+<rule id="200103" level="12">
     <if_sid>550,554</if_sid>
     <field name="file" type="pcre2">^/etc/crontab$|^/etc/cron\.d|^/etc/cron\.daily|^/etc/cron\.hourly|^/etc/cron\.weekly|^/etc/cron\.monthly|^/var/spool/cron/crontabs</field>
     <description>Comportamento Suspeito: Possível mecanismo de persistência (Cron) detectado em $(file)</description>
@@ -498,7 +501,7 @@
 
 <!-- Monitoramento de atividades relacionadas à permissões de sudoers e grupos do Linux -->
 <group name="syscheck,linux,gpg13_4.1,privilege_escalation,">
-<rule id="100104" level="12">
+<rule id="200104" level="12">
     <if_sid>550,554,553</if_sid>
     <field name="file" type="pcre2">^/etc/group$|^/etc/sudoers$|^/etc/sudoers\.d</field>
     <description>Comportamento suspeito: Alteração em permissões em $(file)</description>
@@ -509,7 +512,7 @@
 
 
 <!-- Monitoramento de atividades relacionadas à criação/alteração de usuários do Linux -->
-<rule id="100105" level="12">
+<rule id="200105" level="12">
     <if_sid>550,554,553</if_sid>
     <field name="file" type="pcre2">^/etc/shadow$</field>
     <description>Comportamento suspeito: Modificação no arquivo de usuários $(file). Provável adição ou remoção de usuário local.</description>
@@ -523,7 +526,7 @@
 
 <!-- Leitura de credenciais do /etc/shadow -->
 <group name="auditd,">
-<rule id="100106" level="12">
+<rule id="200106" level="12">
     <if_sid>80700</if_sid>
     <field name="audit.key">shadow_access</field>
     <field name="audit.exe" type="pcre2" negate="yes">^/usr/bin/sudo$|^/usr/bin/su$|^/usr/sbin/sshd$|^/usr/bin/login$|^/usr/sbin/cron$|^/var/ossec/bin/.*$|^/usr/bin/diff$|^/usr/sbin/userdel$|^/usr/sbin/useradd$|^/usr/bin/passwd$|^/usr/sbin/usermod$|^/usr/bin/gpasswd$|^/usr/bin/perl$|^/usr/lib/polkit-1/*|^/usr/lib/systemd/systemd-executor$</field>
@@ -535,7 +538,7 @@
 </rule>
 
 <!-- Shell reverso usando bash -->
-<rule id="100107" level="13">
+<rule id="200107" level="13">
     <if_sid>80700</if_sid>
     <field name="audit.key">remote_shell</field>
     <description>Comportamento suspeito [$(audit.key)]: Shell reverso detectado! Bash iniciou conexão de rede.</description>
@@ -545,7 +548,7 @@
 </rule>
 
 <!-- Uso de ferramenta de rede -->
-<rule id="100108" level="8">
+<rule id="200108" level="8">
     <if_sid>80700</if_sid>
     <field name="audit.key">network_tool</field>
     <description>Comportamento suspeito [$(audit.key)]: Ferramenta de rede/ataque executada: $(audit.file.name)</description>
@@ -555,7 +558,7 @@
 </rule>
 
 <!-- Alteração de profile de shell -->
-<rule id="100109" level="10">
+<rule id="200109" level="10">
     <if_sid>80700</if_sid>
     <field name="audit.key">shell_profiles</field>
     <description>Comportamento suspeito [$(audit.key)]: Modificação em perfil de Shell ($(audit.file.name)) usando $(audit.exe).</description>
@@ -565,7 +568,7 @@
 </rule>
 
 <!-- Alteração de profile de shell -->
-<rule id="100110" level="8">
+<rule id="200110" level="8">
     <if_sid>80700</if_sid>
     <field name="audit.key">network_modifications</field>
     <description>Comportamento suspeito [$(audit.key)]: Configuração de rede alterada ($(audit.file.name)) usando $(audit.exe).</description>
@@ -575,7 +578,7 @@
 </rule>
 
 <!-- Alteração de auditoria do sistema -->
-<rule id="100111" level="13">
+<rule id="200111" level="13">
     <if_sid>80700</if_sid>
     <field name="audit.key">audit_log_tampering|audit_config_change</field>
     <description>Comportamento suspeito [$(audit.key)]: Tentativa de adulterar a auditoria do sistema: ($(audit.file.name))</description>
@@ -585,7 +588,7 @@
 </rule>
 
 <!-- Alteração de regras do Auditd em memória -->
-<rule id="100112" level="13">
+<rule id="200112" level="13">
     <if_sid>80700</if_sid>
     <!-- <field name="audit.key">audit_exec</field> -->
     <field name="audit.exe" type="pcre2">/auditctl$</field>
@@ -597,4 +600,42 @@
 
 </group>
 
+<!--=============================================================================================================================================================================================-->
+<!--=============================================================================================================================================================================================-->
+
+<!--  Regras de descarte -->
+<group name="descarte,">
+<rule id="110099" level="0">
+    <if_sid>67027</if_sid>
+    <list field="win.eventdata.newProcessName" lookup="match_key">etc/lists/process-whitelist</list>
+    <description>[Descarte] Tuning: Processo legítimo ignorado (listado na CDB process-whitelist).</description>
+</rule>
+
+<rule id="110098" level="0">
+    <if_sid>92213</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)__PSScriptPolicyTest_.*\.ps(1|m1|d1)$</field>
+    <description>[Descarte] Tuning: Arquivo de teste de política do PowerShell (Legítimo).</description>
+</rule>
+
+<rule id="110097" level="0">
+    <if_sid>91816,91805</if_sid>    
+    <!-- <field name="win.eventdata.path" type="pcre2">(?i)C:.*(Tools.*Scripts|Program Files.*WindowsPowerShell.*Modules.*PSWindowsUpdate).*</field> -->
+    <field name="win.eventdata.path" type="pcre2">(?i)C:\\+(Tools\\+Scripts|Program Files\\+WindowsPowerShell\\+Modules\\+PSWindowsUpdate)\\+.*</field>
+    <description>[Descarte] Ignorando alertas de qualquer script na pasta C:\Tools\Scripts e outros casos</description>
+</rule>
+
+
+<rule id="92058" level="0" overwrite="yes">
+    <description>[Descarte] Application Compatibility Database launched</description>
+</rule>
+
+<!-- Silenciamento de regras barulhentas -->
+<rule id="60106" level="0" overwrite="yes"><description>[Descarte] Windows Logon Success</description></rule>
+<rule id="60137" level="0" overwrite="yes"><description>[Descarte] Windows User Logoff</description></rule>
+<rule id="92205" level="0" overwrite="yes"><description>[Descarte] Powershell process created an executable file in Windows root folder</description></rule>
+<rule id="67027" level="0" overwrite="yes"><description>[Descarte] A process was created</description></rule>
+<rule id="92307" level="0" overwrite="yes"><description>[Descarte] Evidence of new service creation found</description></rule>
+<rule id="60642" level="0" overwrite="yes"><description>[Descarte] Software protection service scheduled successfully</description></rule>
+</group>
+<!--=============================================================================================================================================================================================-->
 <!--=============================================================================================================================================================================================-->
