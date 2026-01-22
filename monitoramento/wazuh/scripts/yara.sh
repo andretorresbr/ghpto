@@ -6,7 +6,7 @@
 # echo "$(date) - DEBUG: Script yara.sh INICIADO. Argumentos recebidos: $@" >> /tmp/active-responses.log
 
 LOG_FILE="/var/ossec/logs/active-responses.log"
-RULES_FILE="/var/ossec/yara/rules/yara-rules-core.yar"
+RULES_FILE="/var/ossec/yara/rules/yara-rules-core.yarc"
 
 # 1. LER O INPUT JSON DO WAZUH (STDIN)
 read -r INPUT_JSON
