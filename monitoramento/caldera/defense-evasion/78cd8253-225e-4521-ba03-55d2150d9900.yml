@@ -1,0 +1,15 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110029] Limpar logs de sistema'
+  description: Limpar logs de sistema
+  tactic: defense-evasion
+  technique_id: T1070.001
+  technique_name: 'Indicator Removal on Host: Clear Windows Event Logs'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads: []
+    parsers: []
+    command: Clear-EventLog -LogName Application;
+  id: 78cd8253-225e-4521-ba03-55d2150d9900

@@ -1,0 +1,32 @@
+- tactic: defense-evasion
+  technique_name: 'Impair Defenses: Disable or Modify Tools'
+  technique_id: T1562.001
+  name: "[CORP] [Wazuh] [110024] Adicionar pasta em exclus\xE3o no Windows Defender"
+  description: "Adicionar pasta em exclus\xE3o no Windows Defender."
+  executors:
+  - name: psh
+    platform: windows
+    command: 'Add-MpPreference -ExclusionPath "C:\Tools\Testing12345";
+
+      Remove-MpPreference -ExclusionPath "C:\Tools\Testing12345"'
+    code: null
+    language: null
+    build_target: null
+    payloads: []
+    uploads: []
+    timeout: 60
+    parsers: []
+    cleanup: []
+    variations: []
+    additional_info: {}
+  requirements: []
+  privilege: ''
+  repeatable: false
+  buckets:
+  - defense-evasion
+  additional_info: {}
+  access: {}
+  singleton: false
+  plugin: ''
+  delete_payload: true
+  id: d46b31fe-8f0b-42be-ae06-51aa518f79d0

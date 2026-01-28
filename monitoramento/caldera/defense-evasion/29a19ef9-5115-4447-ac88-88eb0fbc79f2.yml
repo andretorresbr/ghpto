@@ -1,0 +1,15 @@
+- requirements: []
+  name: "[CORP] [Wazuh] [110028] Parar servi\xE7o de seguran\xE7a do sistema"
+  description: "Parar servi\xE7o de seguran\xE7a do sistema"
+  tactic: defense-evasion
+  technique_id: T1562.002
+  technique_name: 'Impair Defenses: Disable Windows Event Logging'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads: []
+    parsers: []
+    command: Stop-Service EventLog -Force;
+  id: 29a19ef9-5115-4447-ac88-88eb0fbc79f2
