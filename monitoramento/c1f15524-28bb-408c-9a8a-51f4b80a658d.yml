@@ -1,0 +1,37 @@
+- tactic: credential-access
+  technique_name: 'OS Credential Dumping: NTDS'
+  technique_id: T1003.003
+  name: "[CORP] [Wazuh] [110016] [Tier0] Extra\xE7\xE3o do arquivo NTDS.dit usando\
+    \ ntdsutil"
+  description: "Extra\xE7\xE3o do arquivo NTDS.dit usando ntdsutil"
+  executors:
+  - name: psh
+    platform: windows
+    command: 'New-Item -Path "C:\Tools\AD_Extraction" -ItemType Directory -ErrorAction
+      Ignore;
+
+      NTDSUTIL "Activate Instance NTDS" "IFM" "Create Full C:\Tools\AD_Extraction"
+      "q" "q"
+
+      Remove-Item -Path "C:\Tools\AD_Extraction" -Recurse -Force;'
+    code: null
+    language: null
+    build_target: null
+    payloads: []
+    uploads: []
+    timeout: 60
+    parsers: []
+    cleanup: []
+    variations: []
+    additional_info: {}
+  requirements: []
+  privilege: ''
+  repeatable: false
+  buckets:
+  - credential-access
+  additional_info: {}
+  access: {}
+  singleton: false
+  plugin: ''
+  delete_payload: true
+  id: c1f15524-28bb-408c-9a8a-51f4b80a658d
