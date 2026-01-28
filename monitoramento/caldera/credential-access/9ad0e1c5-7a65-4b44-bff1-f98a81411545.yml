@@ -1,0 +1,17 @@
+- requirements: []
+  name: "[CORP] [Wazuh] [110008] Autentica\xE7\xE3o bem sucedida no dom\xEDnio"
+  description: "Autentica com um usu\xE1rio leg\xEDtimo no dom\xEDnio."
+  tactic: credential-access
+  technique_id: T1078.002
+  technique_name: 'Valid Accounts: Domain Accounts'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads:
+    - nxc.exe
+    parsers: []
+    command: '.\nxc.exe ldap #{corp.domain.dc}.#{corp.domain} -u #{corp.domain.validuser}
+      -p "#{corp.domain.validpass}" -d #{corp.domain}'
+  id: 9ad0e1c5-7a65-4b44-bff1-f98a81411545

