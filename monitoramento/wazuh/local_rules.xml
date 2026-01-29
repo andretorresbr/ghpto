@@ -51,7 +51,7 @@
     <if_sid>60103</if_sid>
     <options>no_full_log</options>
     <field name="win.system.eventID">^4768$</field>
-    <field name="win.eventdata.preAuthType">^0$|^0x0$</field>
+    <field name="win.eventdata.preAuthType">^0$|^0x0$|^-$</field>
     <field name="win.eventdata.status">^0x0$</field>
     <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">\$$</field>
     <field name="win.eventdata.ipAddress" type="pcre2" negate="yes">^127\.0\.0\.1$|^::1$|^-$</field>
@@ -316,7 +316,7 @@
     <field name="win.eventdata.param1" type="pcre2">Windows Event Log|Wazuh|Sysmon</field>
     <description>Comportamento suspeito: O serviço de segurança $(win.eventdata.param1) foi modificado no host $(win.system.computer). Status alterado de '$(win.eventdata.param2)' para '$(win.eventdata.param3)'.</description>
     <mitre>
-        <id>T1562.001</id>
+        <id>T1562.002</id>
     </mitre>
 </rule>
 
@@ -647,7 +647,7 @@
 
 <!-- Silenciamento de regras barulhentas -->
 <rule id="111094" level="0"><if_sid>92205</if_sid><description>[Descarte] Powershell process created an executable file in Windows root folder</description></rule>
-<rule id="111093" level="0"><if_sid>67027</if_sid><description>[Descarte] Sysmon EventID 1 sem interesse de segurança (A process was created)</description></rule>
+<!-- <rule id="111093" level="0"><if_sid>67027</if_sid><description>[Descarte] Sysmon EventID 1 sem interesse de segurança (A process was created)</description></rule> -->
 <rule id="111092" level="0"><if_sid>92058</if_sid><description>[Descarte] Application Compatibility Database launched</description></rule>
 <rule id="111091" level="0"><if_sid>92307</if_sid><description>[Descarte] Evidence of new service creation found</description></rule>
 <rule id="111090" level="0"><if_sid>60642</if_sid><description>[Descarte] Software protection service scheduled successfully</description></rule>
