@@ -1,0 +1,16 @@
+- requirements: []
+  name: "[CORP] [Wazuh] [110031] Tentativa de autentica\xE7\xE3o da conta honeytoken"
+  description: "Tentativa de autentica\xE7\xE3o da conta honeytoken"
+  tactic: discovery
+  technique_id: T1078
+  technique_name: 'Valid Accounts: Domain Accounts'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads: []
+    parsers: []
+    command: (New-Object DirectoryServices.DirectoryEntry "","#{corp.domain}\#{corp.domain.honeytokenuser}","test3@tar3f4$").psbase.name
+      -ne $null;
+  id: d5650cfc-3677-430d-816d-7a5a71a06428

@@ -1,0 +1,23 @@
+- requirements: []
+  name: "[CORP] Enumera\xE7\xE3o de usu\xE1rios do Active Directory"
+  description: "Enumera todos os usu\xE1rios do dom\xEDnio usando o m\xF3dulo AD e\
+    \ salva em usuarios.txt para uso posterior."
+  tactic: discovery
+  technique_id: T1087.002
+  technique_name: 'Account Discovery: Domain Account'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads: []
+    parsers: []
+    command: 'Import-Module ActiveDirectory;
+
+      $Path = "$PWD\#{corp.domain.users}";
+
+      Get-ADUser -Filter * | Select-Object -ExpandProperty sAMAccountName | Out-File
+      -Encoding ASCII $Path;
+
+      Write-Host $Path;'
+  id: 81211716-a933-459d-b065-832a58539a06
