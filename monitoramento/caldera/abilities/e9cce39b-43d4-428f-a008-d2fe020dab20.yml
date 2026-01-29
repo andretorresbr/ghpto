@@ -1,0 +1,46 @@
+- tactic: lateral-movement
+  technique_name: 'Valid Accounts: Domain Accounts'
+  technique_id: T1078
+  name: "[CORP] [Wazuh] [110019] [Tier0] Monitoramento de acessos \xE0 Tier 0 exclusivamente\
+    \ por usu\xE1rios Tier 0"
+  description: "Monitoramento de acessos \xE0 Tier 0 exclusivamente por usu\xE1rios\
+    \ Tier 0"
+  executors:
+  - name: psh
+    platform: windows
+    command: 'Import-Module ActiveDirectory;
+
+      Add-ADGroupMember -Identity "Domain Admins" -Members "#{corp.domain.validuser}"
+      -Verbose;
+
+      $password = ConvertTo-SecureString "#{corp.domain.validpass}" -AsPlainText -Force;
+
+      $cred = New-Object System.Management.Automation.PSCredential(''#{corp.domain}\#{corp.domain.validuser}'',
+      $password);
+
+      Invoke-Command -ComputerName corp-dc.corp.local -Command {whoami} -Credential
+      $cred;
+
+      Remove-ADGroupMember -Identity "Domain Admins" -Members "andre.torres" -Confirm:$false
+      -Verbose;'
+    code: null
+    language: null
+    build_target: null
+    payloads: []
+    uploads: []
+    timeout: 60
+    parsers: []
+    cleanup: []
+    variations: []
+    additional_info: {}
+  requirements: []
+  privilege: ''
+  repeatable: false
+  buckets:
+  - lateral-movement
+  additional_info: {}
+  access: {}
+  singleton: false
+  plugin: ''
+  delete_payload: true
+  id: e9cce39b-43d4-428f-a008-d2fe020dab20
