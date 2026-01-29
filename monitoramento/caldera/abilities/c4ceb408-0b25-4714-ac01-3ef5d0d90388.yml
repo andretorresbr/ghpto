@@ -1,0 +1,15 @@
+- requirements: []
+  name: '[CORP] [Wazuh] [110030] Ler script de honeytoken'
+  description: Ler script de honeytoken (localizado em \\corp.local\NETLOGON\CriaDiscoRede_Estacoes.ps1)
+  tactic: discovery
+  technique_id: T1059.001
+  technique_name: 'Command and Scripting Interpreter: PowerShell'
+  executors:
+  - cleanup: []
+    timeout: 60
+    platform: windows
+    name: psh
+    payloads: []
+    parsers: []
+    command: type \\#{corp.domain}\NETLOGON\CriaDiscoRede_Estacoes.ps1
+  id: c4ceb408-0b25-4714-ac01-3ef5d0d90388
