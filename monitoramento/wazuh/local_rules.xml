@@ -199,7 +199,7 @@
     <field name="win.system.eventID">^4662$</field>
     <field name="win.eventdata.properties" type="pcre2">\{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2\}</field>
     <!-- Ignora DCSync vindo do usuário MSOL (sincronismo do Entra ID Connect) -->
-    <!-- <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^MSOL_7dd2c274f37e$</field> -->
+    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^MSOL_7dd2c274f37e$</field>
     <description>Active Directory: CRÍTICO - Ataque DCSync detectado. O usuário $(win.eventdata.subjectUserName) solicitou replicação de segredos, extraindo a base de hashes de senhas do AD.</description>
     <mitre>
         <id>T1003.006</id>
@@ -517,7 +517,7 @@
 
 <group name="sysmon,sysmon_eid1_detections,windows,">
   <rule id="92057" level="12" overwrite="yes">
-    <if_group>sysmon_event1</if_group>
+    <!-- <if_group>sysmon_event1</if_group> -->
     <field name="win.eventdata.parentImage" type="pcre2">(?i)powershell\.exe</field>
     <!-- Filtro original -->
     <!-- <field name="win.eventdata.commandLine" type="pcre2">(?i)powershell\.exe.+\-\b(encodedcommand|e|ea|ec|encodeda|encode|en|enco)\b</field> -->
@@ -545,6 +545,87 @@
 </group>
 
 <!--=============================================================================================================================================================================================-->  
+
+<!-- Detecções no Windows Firewall -->
+<!-- Essas regras novas são necessárias para Windows 11/Windows Server 2015. Para versões anteriores, elas estão presentes nativamente em 0602-win-wfirewall_rules.xml -->
+
+<group name="windows,windows_firewall,firewall,">
+
+<!-- Detecta adição de nova regra ao Windows Firewall -->
+<rule id="110042" level="12">
+    <if_sid>67001</if_sid>
+    <field name="win.system.eventID">^2097$</field>
+    <field name="win.eventdata.ruleName" negate="yes">^Usermode Font Driver Host$</field> <!-- essa regra gera falsos positivos, por isso é excluída-->
+    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) (porta $(win.eventdata.localPorts)) foi adicionada à lista de regras do firewall local do host $(win.system.computer).</description>
+    <options>no_full_log</options>
+    <mitre>
+        <id>T1562.004</id>
+    </mitre>
+    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
+</rule>
+<!-- Detecta alteração de regra no Windows Firewall -->
+<rule id="110043" level="12">
+    <if_sid>67001</if_sid>
+    <field name="win.system.eventID">^2099$</field>
+    <field name="win.system.message" type="pcre2">(?i)Active:\s+Yes</field>
+    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) (porta $(win.eventdata.localPorts)) foi alterada da lista de regras do firewall local do host $(win.system.computer).</description>
+    <options>no_full_log</options>
+    <mitre>
+        <id>T1562.004</id>
+    </mitre>
+    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
+</rule>
+<!-- Detecta desativação de regra no Windows Firewall -->
+<rule id="110044" level="12">
+    <if_sid>67001</if_sid>
+    <field name="win.system.eventID">^2099$</field>
+    <field name="win.system.message" type="pcre2">(?i)Active:\s+No</field>
+    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) (porta $(win.eventdata.localPorts)) foi desativada da lista de regras do firewall local do host $(win.system.computer).</description>
+    <options>no_full_log</options>
+    <mitre>
+        <id>T1562.004</id>
+    </mitre>
+    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
+</rule>
+<!-- Detecta remoção de regra no Windows Firewall -->
+<rule id="110045" level="12">
+    <if_sid>67001</if_sid>
+    <field name="win.system.eventID">^2052$</field>
+    <field name="win.eventdata.ruleName" negate="yes">^Usermode Font Driver Host$</field> <!-- essa regra gera falsos positivos, por isso é excluída-->
+    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) foi removida da lista de regras do firewall local do host $(win.system.computer).</description>
+    <options>no_full_log</options>
+    <mitre>
+        <id>T1562.004</id>
+    </mitre>
+    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
+</rule>
+<!-- Detecta desabilitação de perfil no Windows Firewall -->
+<rule id="110046" level="12">
+    <if_sid>67001</if_sid>
+    <field name="win.system.eventID">^2082$</field>
+    <field name="win.eventdata.settingValueString" type="pcre2">^No$</field>
+    <!-- <field name="win.system.settingValueString">^No$</field> -->
+    <description>Windows Firewall With Advanced Security: Perfil desabilitado. Verifique no campo message qual perfil foi desabilitado.</description>
+    <options>no_full_log</options>
+    <mitre>
+        <id>T1562.004</id>
+    </mitre>
+    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
+</rule>
+<!-- Detecta desabilitação de perfil do Windows Firewall via registry usando Sysmon -->
+<rule id="110047" level="13">
+    <if_sid>61615</if_sid> <!-- Sysmon Event ID 13 -->
+    <options>no_full_log</options>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\\\FirewallPolicy\\\\(DomainProfile|PublicProfile|StandardProfile)\\\\EnableFirewall$</field>
+    <field name="win.eventdata.details">DWORD \(0x00000000\)</field>
+    <description>Windows Firewall: desativado via alteração de registry</description>
+    <mitre>
+      <id>T1562.004</id>
+    </mitre>
+</rule>
+
+</group>
+
 <!--=============================================================================================================================================================================================-->  
 <!--=============================================================================================================================================================================================-->  
 <!--=============================================================================================================================================================================================-->
@@ -590,7 +671,7 @@
 <!-- Monitoramento de atividades relacionadas ao Cron -->
 <group name="syscheck,linux,gpg13_4.1,persistence_detection,">
 <rule id="200103" level="12">
-    <if_sid>550,554</if_sid>
+    <if_sid>550,554</if_sid> <!-- 550 modificação / 554 adição -->
     <field name="file" type="pcre2">^/etc/crontab$|^/etc/cron\.d|^/etc/cron\.daily|^/etc/cron\.hourly|^/etc/cron\.weekly|^/etc/cron\.monthly|^/var/spool/cron/crontabs</field>
     <description>Comportamento Suspeito: Possível mecanismo de persistência (Cron) detectado em $(file)</description>
     <mitre>
@@ -604,7 +685,7 @@
 <!-- Monitoramento de atividades relacionadas à permissões de sudoers e grupos do Linux -->
 <group name="syscheck,linux,gpg13_4.1,privilege_escalation,">
 <rule id="200104" level="12">
-    <if_sid>550,554,553</if_sid>
+    <if_sid>550,554,553</if_sid> <!-- 550 modificação / 554 adição / 553 remoção -->
     <field name="file" type="pcre2">^/etc/group$|^/etc/sudoers$|^/etc/sudoers\.d</field>
     <description>Comportamento suspeito: Alteração em permissões em $(file)</description>
     <mitre>
@@ -615,7 +696,7 @@
 
 <!-- Monitoramento de atividades relacionadas à criação/alteração de usuários do Linux -->
 <rule id="200105" level="12">
-    <if_sid>550,554,553</if_sid>
+    <if_sid>550,554,553</if_sid> <!-- 550 modificação / 554 adição / 553 remoção -->
     <field name="file" type="pcre2">^/etc/shadow$</field>
     <description>Comportamento suspeito: Modificação no arquivo de usuários $(file). Provável adição ou remoção de usuário local.</description>
     <mitre>
@@ -629,7 +710,7 @@
 <!-- Leitura de credenciais do /etc/shadow -->
 <group name="auditd,">
 <rule id="200106" level="12">
-    <if_sid>80700</if_sid>
+    <if_sid>80700</if_sid> <!-- logs do Auditd -->
     <field name="audit.key">shadow_access</field>
     <!-- Exclui os processos que lidam normalmente com o /etc/shadow -->
     <field name="audit.exe" type="pcre2" negate="yes">^/usr/bin/sudo$|^/usr/bin/su$|^/usr/sbin/sshd$|^/usr/bin/login$|^/usr/sbin/cron$|^/var/ossec/bin/.*$|^/usr/bin/diff$|^/usr/sbin/userdel$|^/usr/sbin/useradd$|^/usr/bin/passwd$|^/usr/sbin/usermod$|^/usr/bin/gpasswd$|^/usr/bin/perl$|^/usr/lib/polkit-1/*|^/usr/lib/systemd/systemd-executor$</field>
@@ -714,6 +795,18 @@
 
 </group>
 
+<!-- Exemplo de regra de Sysmon Linux com EventID = 1 - SID 200115 
+<group name="sysmon_linux,linux_commands,">
+
+  <rule id="200115" level="3">
+    <if_sid>200151</if_sid>
+    <description>Sysmon Linux: Comando executado: $(eventdata.commandLine)</description>
+    <options>no_full_log</options>
+    <group>pci_dss_10.2.7,gpg13_7.1,</group>
+  </rule>
+
+</group> -->
+
 <!--=============================================================================================================================================================================================-->
 <!--  Regras de descarte -->
 <!--=============================================================================================================================================================================================-->
@@ -753,6 +846,7 @@
 
 <!-- Silenciamento de regras barulhentas -->
 <rule id="111094" level="0"><if_sid>92205</if_sid><description>[Descarte] Powershell process created an executable file in Windows root folder</description></rule>
+<!-- <rule id="111093" level="0"><if_sid>67027</if_sid><description>[Descarte] Sysmon EventID 1 sem interesse de segurança (A process was created)</description></rule> -->
 <rule id="111092" level="0"><if_sid>92058</if_sid><description>[Descarte] Application Compatibility Database launched</description></rule>
 <rule id="111091" level="0"><if_sid>92307</if_sid><description>[Descarte] Evidence of new service creation found</description></rule>
 <rule id="111090" level="0"><if_sid>60642</if_sid><description>[Descarte] Software protection service scheduled successfully</description></rule>
@@ -761,3 +855,4 @@
 
 <!--=============================================================================================================================================================================================-->
 <!--=============================================================================================================================================================================================-->
+
