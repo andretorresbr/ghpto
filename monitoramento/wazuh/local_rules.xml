@@ -98,7 +98,7 @@
 <!-- Detecta um password spray que tenha tido sucesso, isto é, uma autenticação válida -->
 <!-- Alerta caso haja um IP que disparou a regra anterior (110007) nos últimos 5 minutos (300s) e tenha conseguido autenticar com sucesso -->
 <!-- SID 60106 refere-se a logons com sucesso no Windows -->
-<rule id="110008" level="14" timeframe="600">
+<rule id="110008" level="14" timeframe="300">
     <if_sid>60106,60118,60200,92652</if_sid>
     <if_matched_sid>110007</if_matched_sid>
     <options>no_full_log</options>
