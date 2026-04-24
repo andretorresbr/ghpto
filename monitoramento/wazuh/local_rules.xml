@@ -546,85 +546,8 @@
 
 <!--=============================================================================================================================================================================================-->  
 
-<!-- Detecções no Windows Firewall -->
-<!-- Essas regras novas são necessárias para Windows 11/Windows Server 2015. Para versões anteriores, elas estão presentes nativamente em 0602-win-wfirewall_rules.xml -->
 
-<group name="windows,windows_firewall,firewall,">
 
-<!-- Detecta adição de nova regra ao Windows Firewall -->
-<rule id="110042" level="12">
-    <if_sid>67001</if_sid>
-    <field name="win.system.eventID">^2097$</field>
-    <field name="win.eventdata.ruleName" negate="yes">^Usermode Font Driver Host$</field> <!-- essa regra gera falsos positivos, por isso é excluída-->
-    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) (porta $(win.eventdata.localPorts)) foi adicionada à lista de regras do firewall local do host $(win.system.computer).</description>
-    <options>no_full_log</options>
-    <mitre>
-        <id>T1562.004</id>
-    </mitre>
-    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
-</rule>
-<!-- Detecta alteração de regra no Windows Firewall -->
-<rule id="110043" level="12">
-    <if_sid>67001</if_sid>
-    <field name="win.system.eventID">^2099$</field>
-    <field name="win.system.message" type="pcre2">(?i)Active:\s+Yes</field>
-    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) (porta $(win.eventdata.localPorts)) foi alterada da lista de regras do firewall local do host $(win.system.computer).</description>
-    <options>no_full_log</options>
-    <mitre>
-        <id>T1562.004</id>
-    </mitre>
-    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
-</rule>
-<!-- Detecta desativação de regra no Windows Firewall -->
-<rule id="110044" level="12">
-    <if_sid>67001</if_sid>
-    <field name="win.system.eventID">^2099$</field>
-    <field name="win.system.message" type="pcre2">(?i)Active:\s+No</field>
-    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) (porta $(win.eventdata.localPorts)) foi desativada da lista de regras do firewall local do host $(win.system.computer).</description>
-    <options>no_full_log</options>
-    <mitre>
-        <id>T1562.004</id>
-    </mitre>
-    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
-</rule>
-<!-- Detecta remoção de regra no Windows Firewall -->
-<rule id="110045" level="12">
-    <if_sid>67001</if_sid>
-    <field name="win.system.eventID">^2052$</field>
-    <field name="win.eventdata.ruleName" negate="yes">^Usermode Font Driver Host$</field> <!-- essa regra gera falsos positivos, por isso é excluída-->
-    <description>Windows Firewall With Advanced Security: a regra $(win.eventdata.ruleName) foi removida da lista de regras do firewall local do host $(win.system.computer).</description>
-    <options>no_full_log</options>
-    <mitre>
-        <id>T1562.004</id>
-    </mitre>
-    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
-</rule>
-<!-- Detecta desabilitação de perfil no Windows Firewall -->
-<rule id="110046" level="12">
-    <if_sid>67001</if_sid>
-    <field name="win.system.eventID">^2082$</field>
-    <field name="win.eventdata.settingValueString" type="pcre2">^No$</field>
-    <!-- <field name="win.system.settingValueString">^No$</field> -->
-    <description>Windows Firewall With Advanced Security: Perfil desabilitado. Verifique no campo message qual perfil foi desabilitado.</description>
-    <options>no_full_log</options>
-    <mitre>
-        <id>T1562.004</id>
-    </mitre>
-    <group>pci_dss_1.4,gpg13_4.12,gdpr_IV_35.7.d,hipaa_164.312.a.1,nist_800_53_SC.7,tsc_CC6.7,tsc_CC6.8,</group>
-</rule>
-<!-- Detecta desabilitação de perfil do Windows Firewall via registry usando Sysmon -->
-<rule id="110047" level="13">
-    <if_sid>61615</if_sid> <!-- Sysmon Event ID 13 -->
-    <options>no_full_log</options>
-    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\\\FirewallPolicy\\\\(DomainProfile|PublicProfile|StandardProfile)\\\\EnableFirewall$</field>
-    <field name="win.eventdata.details">DWORD \(0x00000000\)</field>
-    <description>Windows Firewall: desativado via alteração de registry</description>
-    <mitre>
-      <id>T1562.004</id>
-    </mitre>
-</rule>
-
-</group>
 
 <!--=============================================================================================================================================================================================-->  
 <!--=============================================================================================================================================================================================-->  
@@ -798,7 +721,7 @@
 <!-- Exemplo de regra de Sysmon Linux com EventID = 1 - SID 200115 
 <group name="sysmon_linux,linux_commands,">
 
-  <rule id="200115" level="3">
+  <rule id="20011X" level="3">
     <if_sid>200151</if_sid>
     <description>Sysmon Linux: Comando executado: $(eventdata.commandLine)</description>
     <options>no_full_log</options>
@@ -806,6 +729,56 @@
   </rule>
 
 </group> -->
+
+<group name="audit,audit_command,local,">
+ 
+  <!-- Categoria de suspicious-commands YELLOW => Dual-use: comum em admin mas frequente em ataques (curl, wget, chmod, base64, gcc, python, tar...) -->
+  <rule id="200114" level="6">
+    <if_sid>80792</if_sid>
+    <list field="audit.command" lookup="match_key_value" check_value="yellow">etc/lists/suspicious-commands</list>
+    <description>Audit [suspicious-commands]: comando categoria YELLOW (baixa) de risco: "$(audit.command)"</description>
+    <group>audit_command,suspicious_cmd,</group>
+  </rule>
+  
+  <!-- Categoria de suspicious-commands ORANGE => Alto potencial de abuso, uso legítimo raro (socat, ncat, strace em processo alheio, setcap, chattr...) -->
+  <rule id="200115" level="9">
+    <if_sid>80792</if_sid>
+    <list field="audit.command" lookup="match_key_value" check_value="orange">etc/lists/suspicious-commands</list>
+    <description>Audit [suspicious-commands]: comando categoria ORANGE (média) de risco: "$(audit.command)"</description>
+    <group>audit_command,suspicious_cmd,offensive_tool,</group>
+  </rule>
+  
+  <!-- Categoria de suspicious-commands RED => Ferramentas ofensivas dedicadas, sem uso legítimo em produção (nmap, sqlmap, john, msfconsole, mimipenguin...) -->
+  <rule id="200116" level="12">
+    <if_sid>80792</if_sid>
+    <list field="audit.command" lookup="match_key_value" check_value="red">etc/lists/suspicious-commands</list>
+    <description>Audit [suspicious-commands]: comando categoria RED (alta) de risco: "$(audit.command)" por $(audit.auid)</description>
+    <group>audit_command,malicious_cmd,</group>
+  </rule>
+  
+  <rule id="200117" level="5">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">audit-wazuh-privcmd</field>
+    <description>Audit: $(audit.auid) executou como ROOT: $(audit.exe)</description>
+    <group>audit_command,privileged,</group>
+  </rule>
+  
+  <!-- Escalada: yellow/orange/red executado como root por usuario comum -->
+  <rule id="200118" level="10">
+    <if_sid>200115</if_sid>
+    <field name="audit.euid">0</field>
+    <description>SUSPEITO: "$(audit.command)" executado como ROOT por $(audit.auid) (possivel abuso de sudo/SUID)</description>
+    <group>audit_command,suspicious_cmd,privileged,</group>
+  </rule>
+  
+  <rule id="200119" level="14">
+    <if_sid>200116</if_sid>
+    <field name="audit.euid">0</field>
+    <description>CRITICO: ferramenta ofensiva "$(audit.command)" como ROOT</description>
+    <group>audit_command,malicious_cmd,privileged,</group>
+  </rule>
+
+</group>
 
 <!--=============================================================================================================================================================================================-->
 <!--  Regras de descarte -->
