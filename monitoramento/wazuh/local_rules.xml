@@ -21,9 +21,11 @@
     <if_sid>60103</if_sid>
     <options>no_full_log</options>
     <field name="win.system.eventID">^4769$</field>
-    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <!-- <field name="win.eventdata.ticketEncryptionType">^0x17$</field> .: Desabilitado com patch CVE-2026-20833 (WU Abril/2026) da Microsoft - https://support.microsoft.com/en-us/topic/how-to-manage-kerberos-kdc-usage-of-rc4-for-service-account-ticket-issuance-changes-related-to-cve-2026-20833-1ebcda33-720a-4da8-93c1-b0496e1910dc :. -->
     <field name="win.eventdata.targetUserName" type="pcre2" negate="yes">\$$|^SYSTEM$</field>
-    <description>Active Directory: Possível ataque de Kerberoasting (RC4 Ticket Request) do usuário $(win.eventdata.targetUserName) na conta $(win.eventdata.serviceName)</description>
+    <!-- Exclui TGS para contas de maquina e krbtgt (atividade Kerberos legitima) -->
+    <field name="win.eventdata.serviceName" type="pcre2" negate="yes">\$$|^krbtgt$</field> 
+    <description>Active Directory: Possível ataque de Kerberoasting do usuário $(win.eventdata.targetUserName) solicitou TGS para SPN $(win.eventdata.serviceName)</description>
     <mitre>
       <id>T1558.003</id>
     </mitre>
@@ -735,6 +737,7 @@
   <!-- Categoria de suspicious-commands YELLOW => Dual-use: comum em admin mas frequente em ataques (curl, wget, chmod, base64, gcc, python, tar...) -->
   <rule id="200114" level="6">
     <if_sid>80792</if_sid>
+    <!-- <if_group>audit_command</if_group> -->
     <list field="audit.command" lookup="match_key_value" check_value="yellow">etc/lists/suspicious-commands</list>
     <description>Audit [suspicious-commands]: comando categoria YELLOW (baixa) de risco: "$(audit.command)"</description>
     <group>audit_command,suspicious_cmd,</group>
@@ -743,6 +746,7 @@
   <!-- Categoria de suspicious-commands ORANGE => Alto potencial de abuso, uso legítimo raro (socat, ncat, strace em processo alheio, setcap, chattr...) -->
   <rule id="200115" level="9">
     <if_sid>80792</if_sid>
+    <!-- <if_group>audit_command</if_group> -->
     <list field="audit.command" lookup="match_key_value" check_value="orange">etc/lists/suspicious-commands</list>
     <description>Audit [suspicious-commands]: comando categoria ORANGE (média) de risco: "$(audit.command)"</description>
     <group>audit_command,suspicious_cmd,offensive_tool,</group>
@@ -751,19 +755,21 @@
   <!-- Categoria de suspicious-commands RED => Ferramentas ofensivas dedicadas, sem uso legítimo em produção (nmap, sqlmap, john, msfconsole, mimipenguin...) -->
   <rule id="200116" level="12">
     <if_sid>80792</if_sid>
+    <!-- <if_group>audit_command</if_group> -->
     <list field="audit.command" lookup="match_key_value" check_value="red">etc/lists/suspicious-commands</list>
-    <description>Audit [suspicious-commands]: comando categoria RED (alta) de risco: "$(audit.command)" por $(audit.auid)</description>
+    <description>Audit [suspicious-commands]: comando categoria RED (alta) de risco: "$(audit.command)"</description>
     <group>audit_command,malicious_cmd,</group>
   </rule>
   
   <rule id="200117" level="5">
     <if_sid>80792</if_sid>
+    <!-- <if_group>audit_command</if_group> -->
     <field name="audit.key">audit-wazuh-privcmd</field>
     <description>Audit: $(audit.auid) executou como ROOT: $(audit.exe)</description>
     <group>audit_command,privileged,</group>
   </rule>
   
-  <!-- Escalada: yellow/orange/red executado como root por usuario comum -->
+  <!-- Escalada: yellow/orange/red executado como root por usuario comum 
   <rule id="200118" level="10">
     <if_sid>200115</if_sid>
     <field name="audit.euid">0</field>
@@ -776,7 +782,7 @@
     <field name="audit.euid">0</field>
     <description>CRITICO: ferramenta ofensiva "$(audit.command)" como ROOT</description>
     <group>audit_command,malicious_cmd,privileged,</group>
-  </rule>
+  </rule>-->
 
 </group>
 
