@@ -1,0 +1,71 @@
+# Este arquivo é uma contribuição do aluno Wilson, do curso GHTPTO
+# Contém regras para detecção de manobras de evasão da proteção do Windows Applocker.
+
+<group name="windows, applocker, powershell, forensic, sysmon">
+
+  <!-- 1. BLOQUEIO DE SCRIPT (AppLocker) -->
+  <rule id="100001" level="12">
+    <if_sid>60000</if_sid>
+    <field name="win.system.providerName">^Microsoft-Windows-AppLocker$</field>
+    <field name="win.system.eventID">^8007$</field>
+    <description>AppLocker: Execução de script BLOQUEADA para o usuário $(win.eventdata.subjectUserName)</description>
+    <mitre><id>T1059.001</id></mitre>
+  </rule>
+
+  <!-- 2. AUDITORIA DE CÓDIGO (Script Block Logging) -->
+  <rule id="100002" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.providerName">^Microsoft-Windows-PowerShell$</field>
+    <field name="win.system.eventID">^4104$</field>
+    <field name="win.eventdata.scriptBlockText" type="pcre2">(?i)Import-Module</field>
+    <description>PowerShell: Comando suspeito no ScriptBlock: $(win.eventdata.scriptBlockText)</description>
+  </rule>
+
+  <!-- 3. ABERTURA DO POWERSHELL (Sysmon ID 1) -->
+  <rule id="100005" level="5">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image">\.exe$</field>
+    <match>powershell.exe|pwsh.exe</match>
+    <description>Sysmon: PowerShell aberto pelo usuário $(win.eventdata.user)</description>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- 4. ARGUMENTOS DE EVASÃO (Sysmon ID 1) -->
+  <rule id="100006" level="10">
+    <if_sid>100005</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)-encodedcommand|-enc|bypass|-noprofile|-windowstyle hidden</field>
+    <description>ALERTA: PowerShell iniciado com argumentos de EVASÃO por $(win.eventdata.user)</description>
+  </rule>
+
+  <!-- 5. BYPASS: PARADA DO SERVIÇO APPLOCKER (System Log) -->
+  <rule id="100010" level="12">
+    <if_sid>5102</if_sid>
+    <field name="win.system.message">(?i)Application Identity</field>
+    <match>stopped</match>
+    <description>CRÍTICO: Serviço do AppLocker (AppIDSvc) foi PARADO por $(win.eventdata.subjectUserName)</description>
+  </rule>
+
+  <!-- 6. BYPASS: MOVIMENTAÇÃO PARA PASTA PROTEGIDA (Sysmon ID 11) -->
+  <rule id="100011" level="9">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename">^C:\\Windows\\|^C:\\Program Files\\</field>
+    <field name="win.eventdata.targetFilename" type="pcre2">\.ps1$|\.psm1$|\.dll$</field>
+    <description>Aviso: Arquivo de script/módulo criado em pasta protegida por $(win.eventdata.user)</description>
+  </rule>
+
+  <!-- 7. BYPASS: ALTERAÇÃO DE REGISTRO - PS LOCKDOWN POLICY (Sysmon ID 13) -->
+  <rule id="100012" level="14">
+    <if_sid>61615</if_sid>
+    <field name="win.eventdata.targetObject">\\Environment\\__PSLockdownPolicy</field>
+    <description>CRÍTICO: Tentativa de forçar FullLanguage Mode via REGISTRO (__PSLockdownPolicy) por $(win.eventdata.user)</description>
+    <mitre><id>T1562.001</id></mitre>
+  </rule>
+<!-- 8. MONITORAMENTO DE ALTERAÇÃO DE POLÍTICA (GPEDIT) -->
+<rule id="100013" level="9">
+  <if_sid>61603</if_sid> <!-- Sysmon ID 1 -->
+  <field name="win.eventdata.commandLine" type="pcre2">(?i)gpedit\.msc|secpol\.msc</field>
+  <description>Aviso: O usuário $(win.eventdata.user) abriu o Editor de Política de Grupo (GPEDIT/SECPOL)</description>
+  <mitre>
+    <id>T1562.001</id>
+  </mitre>
+</group>
