@@ -1,0 +1,203 @@
+# Este arquivo é uma contribuição do aluno Wilson, do curso GHTPTO
+# Contém regras para detecção de manobras de evasão da proteção do Windows Applocker.
+<group name="linux,soc_rules,">
+
+  <!-- 1. Integração com YARA -->
+  <rule id="200201" level="3">
+    <if_sid>550, 554</if_sid>
+    <field name="file" type="pcre2">^/tmp|^/dev/shm|^/home|^/var/www/html</field>
+    <description>Ativação de Scan YARA em diretório crítico: $(file)</description>
+  </rule>
+
+  <rule id="200202" level="12">
+    <decoded_as>yara_decoder</decoded_as>
+    <description>YARA: Malware detectado - Regra $(yara_rule) no arquivo $(yara_scanned_file)</description>
+    <mitre><id>T1204.002</id></mitre>
+  </rule>
+
+  <!-- 2. Persistência e Sistema de Arquivos -->
+  <rule id="200203" level="12">
+    <if_sid>550,554</if_sid>
+    <field name="file" type="pcre2">^/etc/crontab$|^/etc/cron\.d|^/etc/cron\.daily|^/etc/cron\.hourly|^/etc/cron\.weekly|^/etc/cron\.monthly|^/var/spool/cron/crontabs</field>
+    <description>Comportamento Suspeito: Persistência (Cron) em $(file)</description>
+    <mitre><id>T1053.005</id></mitre>
+  </rule>
+
+  <rule id="200204" level="12">
+    <if_sid>550,554,553</if_sid>
+    <field name="file" type="pcre2">^/etc/group$|^/etc/group$|^/etc/sudoers$|^/etc/sudoers\.d</field>
+    <description>Comportamento suspeito: Alteração em $(file)</description>
+    <mitre><id>T1078.003</id></mitre>
+  </rule>
+
+  <!-- 3. Auditd: Acesso a Credenciais e Shells -->
+  <rule id="200206" level="12">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">shadow_access</field>
+    <field name="audit.exe" type="pcre2" negate="yes">^/usr/bin/sudo$|^/usr/bin/su$|^/usr/sbin/sshd$|^/usr/bin/login$|^/usr/sbin/cron$|^/var/ossec/bin/.*$|^/usr/bin/diff$|^/usr/sbin/userdel$|^/usr/sbin/useradd$|^/usr/bin/passwd$|^/usr/sbin/usermod$|^/usr/bin/gpasswd$|^/usr/bin/perl$|^/usr/lib/polkit-1/*|^/usr/lib/systemd/systemd-executor$</field>
+    <description>Audit [$(audit.key)]: Leitura de credenciais em $(audit.file.name). Sucesso? $(audit.success)</description>
+    <mitre><id>T1003.008</id></mitre>
+  </rule>
+
+  <rule id="200207" level="13">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">remote_shell</field>
+    <field name="audit.file.name" type="pcre2" negate="yes">/var/run/nscd/socket</field>
+    <description>Audit [$(audit.key)]: Shell reverso detectado!</description>
+    <mitre><id>T1059.004</id></mitre>
+  </rule>
+
+  <!-- 4. Comandos via CDB Lists -->
+  <rule id="200214" level="6">
+    <if_sid>80792</if_sid>
+    <list field="audit.command" lookup="match_key_value" check_value="yellow">etc/lists/suspicious-commands</list>
+    <description>Audit [CDB]: comando risco YELLOW: "$(audit.command)"</description>
+  </rule>
+
+  <rule id="200216" level="12">
+    <if_sid>80792</if_sid>
+    <list field="audit.command" lookup="match_key_value" check_value="red">etc/lists/suspicious-commands</list>
+    <description>Audit [CDB]: comando risco RED: "$(audit.command)"</description>
+  </rule>
+
+  <!-- 5. BLOQUEIOS DO SOC & AUDITORIA DE HISTÓRICO -->
+
+  <rule id="200217" level="3">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">software_install|network_tool</field>
+    <description>SOC MONITOR: Atividade de ferramenta monitorada detectada.</description>
+  </rule>
+
+  <rule id="200220" level="10">
+    <if_sid>200217</if_sid>
+    <field name="audit.execve.a3" type="pcre2">.+</field>
+    <field name="audit.file.name" type="pcre2">/usr/local/bin/apt</field>
+    <description>SOC BLOCK: Instalação do pacote '$(audit.execve.a3)' bloqueada pelo SOC.</description>
+    <mitre><id>T1072</id></mitre>
+  </rule>
+
+  <rule id="200218" level="10">
+    <if_sid>200217</if_sid>
+    <field name="audit.exe" type="pcre2">/usr/local/bin/curl|/usr/local/bin/wget</field>
+    <description>SOC BLOCK: Uso de ferramenta de rede externa ($(audit.exe)) interceptado.</description>
+    <mitre><id>T1105</id></mitre>
+  </rule>
+
+  <rule id="200226" level="8">
+    <if_sid>80700</if_sid>
+    <field name="audit.file.name" type="pcre2">\.bash_history</field>
+    <description>SOC MONITOR: Acesso/Modificação no arquivo .bash_history do usuário.</description>
+    <mitre><id>T1562.006</id></mitre>
+  </rule>
+
+  <rule id="200219" level="14">
+    <if_sid>553</if_sid>
+    <field name="file" type="pcre2">^/usr/local/bin/apt$|^/usr/local/bin/curl$|^/usr/local/bin/wget$</field>
+    <description>ALERTA CRÍTICO: Script de defesa do SOC foi REMOVIDO em $(file)! Possível evasão de controle.</description>
+    <mitre><id>T1562.001</id></mitre>
+  </rule>
+  
+</group>
+
+<group name="linux,soc_rules,">
+  <!-- 5. MONITORAMENTO DE HISTÓRICO (VIA ARQUIVO) -->
+
+<!-- Mantendo a regra de auditoria do history com ID ÚNICO -->
+
+<!-- 1. COMANDOS FORA DO HORÁRIO COMERCIAL (CRÍTICO) -->
+  <!-- Segunda a Sexta, antes das 08h e depois das 18h. Sábado e Domingo o dia todo. -->
+  <rule id="200251" level="12">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">audit_user_commands</field>
+    <time>18:00 - 08:00</time>
+    <weekday>monday, tuesday, wednesday, thursday, friday, saturday, sunday</weekday>
+    <description>SOC ALERT: Atividade fora de horário (AUID: $(audit.auid)): $(audit.exe)</description>
+    <group>audit_command_monitor,outside_hours</group>
+  </rule>
+
+  <!-- 2. COMANDOS EM HORÁRIO COMERCIAL (NORMAL) -->
+  <rule id="200250" level="7">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">audit_user_commands</field>
+    <field name="audit.exe" type="pcre2" negate="yes">^/var/ossec/bin/.*</field>
+    <description>SOC MONITOR: Comando executado: $(audit.exe)</description>
+    <group>audit_command_monitor</group>
+  </rule>
+</group>
+
+<group name="linux,soc_rules,access_control,">
+
+  <!-- 1. LOGIN FORA DO HORÁRIO COMERCIAL (CRÍTICO) -->
+  <!-- Segunda a Sexta (18h às 08h) + Sábados e Domingos -->
+  <rule id="200260" level="12">
+    <if_sid>5715, 5710, 5501</if_sid>
+    <time>18:00 - 08:00</time>
+    <weekday>monday, tuesday, wednesday, thursday, friday, saturday, sunday</weekday>
+    <description>SOC ALERT: Tentativa de Login fora de horário detectada! Usuário: $(dstuser) | Origem: $(srcip)</description>
+    <group>access_anomaly,outside_hours</group>
+  </rule>
+
+  <!-- 2. LOGIN EM HORÁRIO COMERCIAL (INFORMATIVO) -->
+  <rule id="200261" level="3">
+    <if_sid>5715</if_sid>
+    <description>SOC MONITOR: Login de usuário em horário comercial: $(dstuser)</description>
+    <group>access_control</group>
+  </rule>
+
+</group>
+
+<group name="modsecurity_custom,">
+<rule id="31164" level="15" overwrite="yes">
+    <if_sid>31100</if_sid>
+    <!-- Mantemos o match para focar no SQLi, mas a descrição agora é dinâmica -->
+    <match>id=%27|OR%201=1</match>
+    <description>SOC CRITICAL: $(web.log.url) - WAF</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+  </rule>
+
+  <rule id="30411" level="15" overwrite="yes">
+    <match>ModSecurity: Access denied</match>
+    <description>SOC CRITICAL: Ataque Web Bloqueado pelo ModSecurity (WAF)</description>
+</rule>
+</group>
+
+<group name="fail2ban_custom,">
+  <rule id="200300" level="10">
+    <decoded_as>fail2ban-custom</decoded_as>
+    <!-- O $(srcip) vai puxar o IP dinamicamente para o título do alerta -->
+    <description>SOC ALERT: Fail2Ban baniu o IP: $(srcip)</description>
+    <group>service_availability,attack,pci_dss_11.4,</group>
+  </rule>
+</group>
+
+<group name="apache_soc_final,">
+
+  <!-- 1. Regra base para visibilidade -->
+  <rule id="200500" level="3">
+    <if_sid>31100, 31108</if_sid>
+    <description>SOC: Acesso Web detectado em $(url)</description>
+  </rule>
+
+  <!-- 2. Regra de Captura Universal (Regex PCRE2) -->
+  <rule id="200600" level="10">
+    <if_sid>31530, 31100, 31108</if_sid>
+    <!-- O regex abaixo procura 'file=' seguido de qualquer caractere até o final -->
+    <regex>file=\S+</regex>
+    <description>SOC ALERT: Upload/Arquivo detectado! IP: $(srcip) - Recurso: $(url)</description>
+    <group>web_attack,attack,pci_dss_11.4</group>
+  </rule>
+
+</group>
+
+<group name="local,linux,virus,">
+
+  <!-- Alerta crítico para detecção de Malware via ClamAV/Maldet -->
+  <rule id="200700" level="15">
+    <if_sid>52502</if_sid>
+    <description>SOC Lab: Malware detectado no Servidor Web - Ação Imediata Necessária</description>
+    <group>virus,pci_dss_5.1,pci_dss_5.2,gpg13_4.2,gdpr_IV_35.7.d,</group>
+  </rule>
+
+</group>
