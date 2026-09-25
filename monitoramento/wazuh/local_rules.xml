@@ -554,8 +554,8 @@
     <field name="win.system.eventID">^4662$</field>
     <!-- o evento 4662 não traz o nome do grupo, apenas o guid. Por esse motivo, o filtro é pelo guid do grupo T0 Admins Legado -->
     <field name="win.eventdata.objectName" type="pcre2">(?i)\{?88ebc802-98c9-4f6c-8668-a0032785d679\}?</field>
-    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">\$$|^SYSTEM$</field>
-    <!-- <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">\$$|^SYSTEM$|^(svc_authentik_bind|svc_guacamole_bind)$</field> -->
+    <!-- <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^SYSTEM$|^CORP-DC\$$|^SRV-SUBCA\$$|^svc_authentik_bind$|^svc_guacamole_bind$</field> -->
+    <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^SYSTEM$</field>
     <description>[Honeytoken] HONEYTOKEN ACIONADO - grupo Tier 0 isca 'T0 Admins Legado' lido por $(win.eventdata.subjectDomainName)\$(win.eventdata.subjectUserName). Nenhum processo legitimo deveria ler este grupo.</description>
     <mitre>
         <id>T1087.002</id>
