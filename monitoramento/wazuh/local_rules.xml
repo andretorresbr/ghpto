@@ -549,25 +549,14 @@
 <!--=============================================================================================================================================================================================-->  
 <group name="windows, windows_security, active_directory,">
 
-<rule id="110042" level="3">
-    <if_group>windows</if_group>
-    <options>no_full_log</options>
+<rule id="110042" level="13" ignore="30">
+    <if_sid>60103</if_sid>
     <field name="win.system.eventID">^4662$</field>
+    <!-- o evento 4662 não traz o nome do grupo, apenas o guid. Por esse motivo, o filtro é pelo guid do grupo T0 Admins Legado -->
     <field name="win.eventdata.objectName" type="pcre2">(?i)\{?88ebc802-98c9-4f6c-8668-a0032785d679\}?</field>
     <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">\$$|^SYSTEM$</field>
     <!-- <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">\$$|^SYSTEM$|^(svc_authentik_bind|svc_guacamole_bind)$</field> -->
-    <description>[Honeypot] Leitura do grupo isca 'T0 Admins Legado' por $(win.eventdata.subjectUserName).</description>
-    <group>decoy_access,</group>
-</rule>
- 
-<!-- [Decoy] Alerta: uma enumeracao le varios atributos e gera varios 4662.
-     frequency=2/timeframe=15 colapsa a rajada em UM alerta; same_field conta
-     por usuario; ignore=300 evita repeticao durante enumeracao demorada.
-     if_matched_sid unico (110042) mantem a contagem previsivel. -->
-<rule id="110043" level="13" frequency="2" timeframe="15" ignore="300">
-    <if_matched_sid>110042</if_matched_sid>
-    <same_field>win.eventdata.subjectUserName</same_field>
-    <description>[Honeypot] HONEYTOKEN ACIONADO - grupo Tier 0 isca 'T0 Admins Legado' enumerado por $(win.eventdata.subjectDomainName)\$(win.eventdata.subjectUserName). Nenhum processo legitimo deveria ler este grupo.</description>
+    <description>[Honeytoken] HONEYTOKEN ACIONADO - grupo Tier 0 isca 'T0 Admins Legado' lido por $(win.eventdata.subjectDomainName)\$(win.eventdata.subjectUserName). Nenhum processo legitimo deveria ler este grupo.</description>
     <mitre>
         <id>T1087.002</id>
         <id>T1069.002</id>
