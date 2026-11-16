@@ -559,7 +559,7 @@
     <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^SYSTEM$</field>
     <field name="win.eventdata.subjectUserName" type="pcre2" negate="yes">^(svc_authentik_bind|svc_guacamole_bind|svc_ingest_bhce)$</field> -->
     
-    <description>[Honeytoken] HONEYTOKEN ACIONADO - grupo Tier 0 isca 'T0 Admins Legado' lido por $(win.eventdata.subjectDomainName)\$(win.eventdata.subjectUserName). Nenhum processo legitimo deveria ler este grupo.</description>
+    <description>[Honeytoken] HONEYTOKEN ACIONADO - membros do grupo Tier 0 isca 'T0 Admins Legado' lido por $(win.eventdata.subjectDomainName)\$(win.eventdata.subjectUserName). Possivel enumeracao do dominio.</description>
     <mitre>
         <id>T1087.002</id>
         <id>T1069.002</id>
